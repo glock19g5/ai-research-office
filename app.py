@@ -41,6 +41,95 @@ BUILD_AGENT_KEYS = [
 SESSION_KEY_PREFIX = "session_api_key_"
 
 
+def apply_page_styles() -> None:
+    st.markdown(
+        """
+        <style>
+        .hero-wrap {
+            padding: 2.5rem 0 1.5rem;
+        }
+        .hero-title {
+            font-size: 3.1rem;
+            line-height: 1.05;
+            font-weight: 800;
+            margin: 0 0 .7rem;
+        }
+        .hero-subtitle {
+            max-width: 860px;
+            font-size: 1.1rem;
+            color: rgba(250, 250, 250, .72);
+            margin-bottom: 1.3rem;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: .8rem;
+            margin: 1.2rem 0 1.5rem;
+        }
+        .feature-card {
+            border: 1px solid rgba(250, 250, 250, .12);
+            border-radius: 8px;
+            padding: 1rem;
+            background: rgba(255, 255, 255, .035);
+        }
+        .feature-card strong {
+            display: block;
+            margin-bottom: .35rem;
+        }
+        .feature-card span {
+            color: rgba(250, 250, 250, .68);
+            font-size: .95rem;
+        }
+        .step-box {
+            border-left: 3px solid #ff4b4b;
+            padding: .65rem 0 .65rem 1rem;
+            margin: .5rem 0;
+            background: rgba(255, 75, 75, .06);
+        }
+        @media (max-width: 900px) {
+            .feature-grid { grid-template-columns: 1fr; }
+            .hero-title { font-size: 2.25rem; }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_landing(show_login: bool = False) -> None:
+    st.markdown(
+        """
+        <div class="hero-wrap">
+            <div class="hero-title">🧠 AI Research Office</div>
+            <div class="hero-subtitle">
+                พื้นที่ทำงาน AI สำหรับวิจัย วางแผน สร้างโปรเจกต์ และแปลงผลลัพธ์เป็นไฟล์จริง
+                โดยผู้ใช้แต่ละคนสามารถใช้ API key ของตัวเองได้
+            </div>
+        </div>
+        <div class="feature-grid">
+            <div class="feature-card"><strong>🔍 Research</strong><span>ช่วยสรุป วิเคราะห์ เปรียบเทียบ และให้คำแนะนำเป็นภาษาไทย</span></div>
+            <div class="feature-card"><strong>🏗️ Build</strong><span>ช่วยวาง PRD, architecture, code package และสร้างไฟล์โปรเจกต์จริง</span></div>
+            <div class="feature-card"><strong>🔐 Bring your key</strong><span>กรอก Gemini, OpenAI หรือ Claude key ของคุณเองใน session ส่วนตัว</span></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("### วิธีเริ่มใช้งาน")
+    st.markdown(
+        """
+        <div class="step-box"><b>1.</b> เข้าสู่ระบบด้วยรหัสที่ได้รับจากผู้ดูแล</div>
+        <div class="step-box"><b>2.</b> เปิด sidebar แล้วกรอก API key ของคุณใน <code>API keys ของผู้ใช้นี้</code></div>
+        <div class="step-box"><b>3.</b> เลือกโหมด <code>วิจัยและแนะนำ</code> หรือ <code>สร้างโปรเจกต์ใหม่</code></div>
+        <div class="step-box"><b>4.</b> เปิดโหมดประหยัด quota สำหรับการทดลอง หรือเลือกโมเดลแยกต่อ agent เมื่อพร้อม</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if show_login:
+        st.markdown("### เข้าสู่ระบบ")
+
+
 def provider_index(provider: str) -> int:
     return list(config.MODEL_CATALOG.keys()).index(provider)
 
@@ -122,7 +211,7 @@ def require_login() -> None:
     if st.session_state.get("authenticated"):
         return
 
-    st.title("🔐 AI Research Office")
+    render_landing(show_login=True)
     password = st.text_input("รหัสเข้าใช้งาน", type="password")
     if st.button("เข้าสู่ระบบ"):
         if password == app_password:
@@ -133,10 +222,13 @@ def require_login() -> None:
     st.stop()
 
 
+apply_page_styles()
 require_login()
 
 st.title("🧠 AI Research Office")
 st.caption("ทีมเอเจนต์ AI ช่วยวิจัย วางแผน และเตรียมสร้างโปรเจกต์ — เลือกโมเดลแยกตามทีมได้")
+with st.expander("👋 เริ่มต้นใช้งาน", expanded=False):
+    render_landing(show_login=False)
 
 
 with st.sidebar:
