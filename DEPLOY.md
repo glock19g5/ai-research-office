@@ -18,7 +18,7 @@
 5. In app settings/secrets, add:
 
 ```toml
-APP_PASSWORD = "your-login-password"
+APP_PASSWORD = "your-registration-invite-code"
 ```
 
 If you want users to use their own provider keys, do not add `GEMINI_API_KEY`, `OPENAI_API_KEY`, or `ANTHROPIC_API_KEY` as server secrets.
@@ -39,14 +39,14 @@ Start Command: streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
 4. Add environment variable:
 
 ```text
-APP_PASSWORD=your-login-password
+APP_PASSWORD=your-registration-invite-code
 ```
 
 Leave provider keys empty if each user should enter their own key in the app.
 
 ## Sharing
 
-After deployment, share the public HTTPS URL and the app password. Each user can open the sidebar and enter their own API key under:
+After deployment, share the public HTTPS URL and the registration invite code. Users can create their own account, then open the sidebar and enter their own API key under:
 
 ```text
 API keys ของผู้ใช้นี้

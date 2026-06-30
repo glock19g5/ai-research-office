@@ -4,6 +4,7 @@ import importlib
 
 import streamlit as st
 
+import auth_store
 import config
 import project_writer
 from build_runner import run_build_crew
@@ -13,6 +14,7 @@ from quick_runner import run_quick_workflow
 
 config = importlib.reload(config)
 project_writer = importlib.reload(project_writer)
+auth_store = importlib.reload(auth_store)
 
 
 st.set_page_config(
@@ -118,7 +120,7 @@ def render_landing(show_login: bool = False) -> None:
     st.markdown("### วิธีเริ่มใช้งาน")
     st.markdown(
         """
-        <div class="step-box"><b>1.</b> เข้าสู่ระบบด้วยรหัสที่ได้รับจากผู้ดูแล</div>
+        <div class="step-box"><b>1.</b> สมัครสมาชิกหรือเข้าสู่ระบบด้วยบัญชีของคุณ</div>
         <div class="step-box"><b>2.</b> เปิด sidebar แล้วกรอก API key ของคุณใน <code>API keys ของผู้ใช้นี้</code></div>
         <div class="step-box"><b>3.</b> เลือกโหมด <code>วิจัยและแนะนำ</code> หรือ <code>สร้างโปรเจกต์ใหม่</code></div>
         <div class="step-box"><b>4.</b> เปิดโหมดประหยัด quota สำหรับการทดลอง หรือเลือกโมเดลแยกต่อ agent เมื่อพร้อม</div>
@@ -204,22 +206,67 @@ def missing_provider_keys(providers: set[str]) -> list[tuple[str, str]]:
 
 
 def require_login() -> None:
-    app_password = config.get_app_password()
-    if not app_password:
-        return
-
-    if st.session_state.get("authenticated"):
+    if st.session_state.get("authenticated_user"):
         return
 
     render_landing(show_login=True)
-    password = st.text_input("รหัสเข้าใช้งาน", type="password")
-    if st.button("เข้าสู่ระบบ"):
-        if password == app_password:
-            st.session_state["authenticated"] = True
-            st.rerun()
+    login_tab, register_tab = st.tabs(["เข้าสู่ระบบ", "สมัครสมาชิก"])
+
+    with login_tab:
+        username = st.text_input("ชื่อผู้ใช้", key="login_username")
+        password = st.text_input("รหัสผ่าน", type="password", key="login_password")
+        if st.button("เข้าสู่ระบบ", key="login_button"):
+            result = auth_store.authenticate(username, password)
+            if result.ok:
+                st.session_state["authenticated_user"] = result.message
+                st.success("เข้าสู่ระบบสำเร็จ")
+                st.rerun()
+            else:
+                st.error(result.message)
+
+    with register_tab:
+        invite_password = config.get_app_password()
+        if auth_store.user_count() == 0:
+            st.info("ยังไม่มีผู้ใช้ในระบบ บัญชีแรกที่สมัครจะเป็นบัญชีแรกของแอปนี้")
+        if invite_password:
+            invite_code = st.text_input("รหัสเชิญสมัครสมาชิก", type="password", key="invite_code")
         else:
-            st.error("รหัสไม่ถูกต้อง")
+            invite_code = ""
+            st.caption("ระบบนี้เปิดให้สมัครสมาชิกได้โดยไม่ต้องใช้รหัสเชิญ")
+
+        new_username = st.text_input("ชื่อผู้ใช้ใหม่", key="register_username")
+        new_password = st.text_input("รหัสผ่านใหม่", type="password", key="register_password")
+        confirm_password = st.text_input("ยืนยันรหัสผ่าน", type="password", key="register_confirm_password")
+
+        if st.button("สมัครสมาชิก", key="register_button"):
+            if invite_password and invite_code != invite_password:
+                st.error("รหัสเชิญสมัครสมาชิกไม่ถูกต้อง")
+            elif new_password != confirm_password:
+                st.error("รหัสผ่านยืนยันไม่ตรงกัน")
+            else:
+                result = auth_store.create_user(new_username, new_password)
+                if result.ok:
+                    st.session_state["authenticated_user"] = new_username.strip().lower()
+                    st.success(result.message)
+                    st.rerun()
+                else:
+                    st.error(result.message)
     st.stop()
+
+
+def render_account_panel() -> None:
+    user = st.session_state.get("authenticated_user")
+    if not user:
+        return
+
+    st.sidebar.markdown("### 👤 บัญชี")
+    st.sidebar.caption(f"เข้าสู่ระบบเป็น `{user}`")
+    if st.sidebar.button("ออกจากระบบ"):
+        for key in list(st.session_state.keys()):
+            if key.startswith(SESSION_KEY_PREFIX):
+                st.session_state[key] = ""
+        st.session_state.pop("authenticated_user", None)
+        st.rerun()
 
 
 apply_page_styles()
@@ -232,6 +279,7 @@ with st.expander("👋 เริ่มต้นใช้งาน", expanded=Fal
 
 
 with st.sidebar:
+    render_account_panel()
     st.header("⚙️ การตั้งค่า")
     default_provider, default_model = render_model_picker(
         "default",
