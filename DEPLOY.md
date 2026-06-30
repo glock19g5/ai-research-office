@@ -13,13 +13,17 @@
 1. Push this folder to a GitHub repository.
 2. Go to Streamlit Community Cloud and deploy `app.py`.
 3. Make sure the repository contains `requirements.txt`.
-4. In app settings/secrets, add:
+4. Open **Advanced settings** before deploying and select **Python 3.11** or **Python 3.12**.
+   CrewAI/ChromaDB can fail on Python 3.14.
+5. In app settings/secrets, add:
 
 ```toml
 APP_PASSWORD = "your-login-password"
 ```
 
 If you want users to use their own provider keys, do not add `GEMINI_API_KEY`, `OPENAI_API_KEY`, or `ANTHROPIC_API_KEY` as server secrets.
+
+If your existing app already deployed with Python 3.14, delete/redeploy it and choose Python 3.11 or 3.12 in Advanced settings. Streamlit Community Cloud does not reliably use `runtime.txt` for Python version selection.
 
 ## Option 2: Render
 
