@@ -1,6 +1,7 @@
 """Streamlit UI for AI Research Office."""
 
 import importlib
+from html import escape
 
 import streamlit as st
 
@@ -47,6 +48,9 @@ OFFICE_AGENTS = [
         "role": "รับคำสั่ง วางแผน และแจกงาน",
         "key": "director",
         "team": "Core",
+        "color": "#67e8f9",
+        "accent": "#f59e0b",
+        "delay": "0s",
     },
     {
         "icon": "🔍",
@@ -54,6 +58,9 @@ OFFICE_AGENTS = [
         "role": "ค้นข้อมูล วิเคราะห์ และสรุป insight",
         "key": "info_hunter",
         "team": "Research",
+        "color": "#60a5fa",
+        "accent": "#a78bfa",
+        "delay": "-.8s",
     },
     {
         "icon": "📊",
@@ -61,6 +68,9 @@ OFFICE_AGENTS = [
         "role": "เปรียบเทียบทางเลือกและทำตาราง",
         "key": "comparison_builder",
         "team": "Research",
+        "color": "#34d399",
+        "accent": "#fbbf24",
+        "delay": "-1.5s",
     },
     {
         "icon": "🎯",
@@ -68,6 +78,9 @@ OFFICE_AGENTS = [
         "role": "ฟันธงคำแนะนำและ next steps",
         "key": "decision_advisor",
         "team": "Research",
+        "color": "#fb7185",
+        "accent": "#f97316",
+        "delay": "-2.2s",
     },
     {
         "icon": "📌",
@@ -75,6 +88,9 @@ OFFICE_AGENTS = [
         "role": "แตก requirement และ MVP scope",
         "key": "product_planner",
         "team": "Build",
+        "color": "#c084fc",
+        "accent": "#22d3ee",
+        "delay": "-.4s",
     },
     {
         "icon": "🏛️",
@@ -82,6 +98,9 @@ OFFICE_AGENTS = [
         "role": "เลือก stack และวางโครงสร้างระบบ",
         "key": "system_architect",
         "team": "Build",
+        "color": "#facc15",
+        "accent": "#38bdf8",
+        "delay": "-1.1s",
     },
     {
         "icon": "💻",
@@ -89,6 +108,9 @@ OFFICE_AGENTS = [
         "role": "เตรียมโค้ด ไฟล์ และวิธีรัน",
         "key": "developer",
         "team": "Build",
+        "color": "#4ade80",
+        "accent": "#818cf8",
+        "delay": "-1.8s",
     },
     {
         "icon": "🧪",
@@ -96,6 +118,9 @@ OFFICE_AGENTS = [
         "role": "ตรวจความเสี่ยงและวิธีทดสอบ",
         "key": "tester",
         "team": "Build",
+        "color": "#f472b6",
+        "accent": "#2dd4bf",
+        "delay": "-2.6s",
     },
 ]
 
@@ -243,6 +268,260 @@ def model_label_for_agent(
     return f"{default_provider} / {default_model}"
 
 
+def render_agent_character(agent: dict[str, str], model_label: str) -> None:
+    name = escape(agent["name"])
+    role = escape(agent["role"])
+    team = escape(agent["team"])
+    icon = escape(agent["icon"])
+    color = escape(agent["color"])
+    accent = escape(agent["accent"])
+    delay = escape(agent["delay"])
+    model = escape(model_label)
+
+    st.components.v1.html(
+        f"""
+        <!doctype html>
+        <html>
+        <head>
+        <meta charset="utf-8" />
+        <style>
+            * {{
+                box-sizing: border-box;
+            }}
+            body {{
+                margin: 0;
+                font-family: "Inter", "Segoe UI", sans-serif;
+                background: transparent;
+                color: #f8fafc;
+            }}
+            .agent-room {{
+                height: 218px;
+                overflow: hidden;
+                border: 1px solid rgba(255, 255, 255, .14);
+                border-radius: 8px;
+                background:
+                    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.025)),
+                    radial-gradient(circle at 12% 12%, {color}22, transparent 35%),
+                    #111827;
+                padding: 12px;
+                position: relative;
+            }}
+            .stage {{
+                height: 96px;
+                overflow: hidden;
+                border-radius: 7px;
+                background:
+                    linear-gradient(180deg, rgba(15, 23, 42, .12) 0%, rgba(15, 23, 42, .35) 58%, rgba(15, 23, 42, .72) 58%),
+                    repeating-linear-gradient(90deg, rgba(255,255,255,.045) 0 1px, transparent 1px 22px);
+                border: 1px solid rgba(255,255,255,.08);
+                position: relative;
+            }}
+            .walker {{
+                width: 72px;
+                height: 82px;
+                position: absolute;
+                left: 7px;
+                bottom: 7px;
+                transform-origin: center bottom;
+                animation: stroll 4.8s ease-in-out infinite alternate;
+                animation-delay: {delay};
+            }}
+            .bot {{
+                width: 54px;
+                height: 78px;
+                margin: 0 auto;
+                position: relative;
+                filter: drop-shadow(0 8px 8px rgba(0,0,0,.26));
+                animation: bounce .58s ease-in-out infinite alternate;
+            }}
+            .head {{
+                width: 38px;
+                height: 34px;
+                left: 8px;
+                top: 0;
+                border-radius: 8px;
+                background: #f8d6ad;
+                border: 3px solid rgba(15,23,42,.72);
+                position: absolute;
+            }}
+            .hair {{
+                position: absolute;
+                width: 44px;
+                height: 14px;
+                left: 5px;
+                top: -2px;
+                border-radius: 7px 7px 3px 3px;
+                background: {accent};
+                border: 2px solid rgba(15,23,42,.72);
+            }}
+            .eye {{
+                position: absolute;
+                top: 14px;
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                background: #0f172a;
+            }}
+            .eye.left {{ left: 11px; }}
+            .eye.right {{ right: 11px; }}
+            .smile {{
+                position: absolute;
+                left: 14px;
+                top: 22px;
+                width: 10px;
+                height: 5px;
+                border-bottom: 2px solid #0f172a;
+                border-radius: 0 0 8px 8px;
+            }}
+            .body {{
+                width: 42px;
+                height: 36px;
+                left: 6px;
+                top: 34px;
+                border-radius: 6px;
+                background: {color};
+                border: 3px solid rgba(15,23,42,.72);
+                position: absolute;
+            }}
+            .badge {{
+                position: absolute;
+                top: 8px;
+                left: 13px;
+                width: 16px;
+                height: 16px;
+                border-radius: 5px;
+                display: grid;
+                place-items: center;
+                font-size: 10px;
+                background: rgba(255,255,255,.82);
+            }}
+            .arm, .leg {{
+                position: absolute;
+                border: 3px solid rgba(15,23,42,.72);
+                background: {accent};
+                border-radius: 6px;
+            }}
+            .arm {{
+                width: 12px;
+                height: 31px;
+                top: 38px;
+                transform-origin: center top;
+                animation: armSwing .58s ease-in-out infinite alternate;
+            }}
+            .arm.left {{ left: -2px; }}
+            .arm.right {{
+                right: -2px;
+                animation-direction: alternate-reverse;
+            }}
+            .leg {{
+                width: 15px;
+                height: 22px;
+                top: 64px;
+                transform-origin: center top;
+                animation: legSwing .58s ease-in-out infinite alternate;
+            }}
+            .leg.left {{ left: 10px; }}
+            .leg.right {{
+                right: 10px;
+                animation-direction: alternate-reverse;
+            }}
+            .floor-dot {{
+                position: absolute;
+                bottom: 10px;
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                background: rgba(255,255,255,.22);
+            }}
+            .agent-name {{
+                margin: 10px 0 2px;
+                font-size: 18px;
+                font-weight: 800;
+                line-height: 1.1;
+            }}
+            .agent-role {{
+                color: rgba(248,250,252,.72);
+                font-size: 13px;
+                min-height: 20px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }}
+            .meta {{
+                color: rgba(248,250,252,.62);
+                font-size: 12px;
+                margin-top: 7px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }}
+            .status {{
+                position: absolute;
+                right: 12px;
+                bottom: 12px;
+                color: #86efac;
+                border: 1px solid rgba(34,197,94,.4);
+                background: rgba(34,197,94,.11);
+                border-radius: 999px;
+                padding: 4px 9px;
+                font-size: 12px;
+                font-weight: 700;
+            }}
+            @keyframes stroll {{
+                0% {{ left: 7px; transform: scaleX(1); }}
+                48% {{ left: calc(100% - 79px); transform: scaleX(1); }}
+                52% {{ left: calc(100% - 79px); transform: scaleX(-1); }}
+                100% {{ left: 7px; transform: scaleX(-1); }}
+            }}
+            @keyframes bounce {{
+                from {{ transform: translateY(0); }}
+                to {{ transform: translateY(-3px); }}
+            }}
+            @keyframes armSwing {{
+                from {{ transform: rotate(18deg); }}
+                to {{ transform: rotate(-18deg); }}
+            }}
+            @keyframes legSwing {{
+                from {{ transform: rotate(-12deg); }}
+                to {{ transform: rotate(12deg); }}
+            }}
+        </style>
+        </head>
+        <body>
+            <div class="agent-room">
+                <div class="stage">
+                    <span class="floor-dot" style="left: 18%;"></span>
+                    <span class="floor-dot" style="left: 48%;"></span>
+                    <span class="floor-dot" style="left: 78%;"></span>
+                    <div class="walker">
+                        <div class="bot">
+                            <div class="hair"></div>
+                            <div class="head">
+                                <span class="eye left"></span>
+                                <span class="eye right"></span>
+                                <span class="smile"></span>
+                            </div>
+                            <div class="arm left"></div>
+                            <div class="arm right"></div>
+                            <div class="body"><span class="badge">{icon}</span></div>
+                            <div class="leg left"></div>
+                            <div class="leg right"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="agent-name">{name}</div>
+                <div class="agent-role">{role}</div>
+                <div class="meta">ทีม: {team} | โมเดล: {model}</div>
+                <div class="status">พร้อมรับงาน</div>
+            </div>
+        </body>
+        </html>
+        """,
+        height=228,
+        scrolling=False,
+    )
+
+
 def render_office_dashboard(
     default_provider: str,
     default_model: str,
@@ -282,13 +561,7 @@ def render_office_dashboard(
             )
 
             with column:
-                with st.container(border=True):
-                    header_cols = st.columns([0.16, 0.84])
-                    header_cols[0].markdown(f"### {agent['icon']}")
-                    header_cols[1].markdown(f"**{agent['name']}**")
-                    header_cols[1].caption(agent["role"])
-                    st.caption(f"ทีม: {agent['team']} | โมเดล: {model_label}")
-                    st.success("พร้อมรับงาน")
+                render_agent_character(agent, model_label)
 
 
 def session_api_key(provider: str) -> str | None:
