@@ -1,6 +1,7 @@
 """Streamlit UI for AI Research Office."""
 
 import importlib
+from html import escape
 
 import streamlit as st
 
@@ -38,6 +39,65 @@ BUILD_AGENT_KEYS = [
     ("developer", "💻 Developer"),
     ("tester", "🧪 Tester"),
     ("delivery_reporter", "📦 Delivery Reporter"),
+]
+
+OFFICE_AGENTS = [
+    {
+        "icon": "🧭",
+        "name": "Director",
+        "role": "รับคำสั่ง วางแผน และแจกงาน",
+        "key": "director",
+        "team": "Core",
+    },
+    {
+        "icon": "🔍",
+        "name": "Researcher",
+        "role": "ค้นข้อมูล วิเคราะห์ และสรุป insight",
+        "key": "info_hunter",
+        "team": "Research",
+    },
+    {
+        "icon": "📊",
+        "name": "Analyst",
+        "role": "เปรียบเทียบทางเลือกและทำตาราง",
+        "key": "comparison_builder",
+        "team": "Research",
+    },
+    {
+        "icon": "🎯",
+        "name": "Advisor",
+        "role": "ฟันธงคำแนะนำและ next steps",
+        "key": "decision_advisor",
+        "team": "Research",
+    },
+    {
+        "icon": "📌",
+        "name": "Planner",
+        "role": "แตก requirement และ MVP scope",
+        "key": "product_planner",
+        "team": "Build",
+    },
+    {
+        "icon": "🏛️",
+        "name": "Architect",
+        "role": "เลือก stack และวางโครงสร้างระบบ",
+        "key": "system_architect",
+        "team": "Build",
+    },
+    {
+        "icon": "💻",
+        "name": "Developer",
+        "role": "เตรียมโค้ด ไฟล์ และวิธีรัน",
+        "key": "developer",
+        "team": "Build",
+    },
+    {
+        "icon": "🧪",
+        "name": "Tester",
+        "role": "ตรวจความเสี่ยงและวิธีทดสอบ",
+        "key": "tester",
+        "team": "Build",
+    },
 ]
 
 SESSION_KEY_PREFIX = "session_api_key_"
@@ -88,8 +148,51 @@ def apply_page_styles() -> None:
             margin: .5rem 0;
             background: rgba(255, 75, 75, .06);
         }
+        .office-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: .8rem;
+            margin-top: .8rem;
+        }
+        .agent-card {
+            border: 1px solid rgba(250, 250, 250, .12);
+            border-radius: 8px;
+            padding: .95rem;
+            background: rgba(255, 255, 255, .035);
+            min-height: 150px;
+        }
+        .agent-face {
+            font-size: 1.8rem;
+            margin-bottom: .25rem;
+        }
+        .agent-name {
+            font-weight: 800;
+            font-size: 1.05rem;
+            margin-bottom: .25rem;
+        }
+        .agent-role {
+            color: rgba(250, 250, 250, .7);
+            font-size: .9rem;
+            min-height: 42px;
+        }
+        .agent-meta {
+            margin-top: .6rem;
+            font-size: .82rem;
+            color: rgba(250, 250, 250, .58);
+        }
+        .status-pill {
+            display: inline-block;
+            margin-top: .55rem;
+            padding: .18rem .5rem;
+            border-radius: 999px;
+            border: 1px solid rgba(35, 197, 94, .35);
+            color: #7ee787;
+            background: rgba(35, 197, 94, .08);
+            font-size: .78rem;
+        }
         @media (max-width: 900px) {
             .feature-grid { grid-template-columns: 1fr; }
+            .office-grid { grid-template-columns: 1fr; }
             .hero-title { font-size: 2.25rem; }
         }
         </style>
@@ -162,6 +265,71 @@ def render_model_picker(key_prefix: str, label: str, default_provider: str, defa
         placeholder="เว้นว่างเพื่อใช้ model จาก dropdown",
     )
     return provider, custom_model.strip() or model
+
+
+def model_label_for_agent(
+    agent_key: str,
+    default_provider: str,
+    default_model: str,
+    research_model_settings: dict[str, tuple[str, str]],
+    build_model_settings: dict[str, tuple[str, str]],
+    director_provider: str,
+    director_model: str,
+) -> str:
+    if agent_key == "director":
+        return f"{director_provider} / {director_model}"
+    if agent_key in research_model_settings:
+        provider, model = research_model_settings[agent_key]
+        return f"{provider} / {model}"
+    if agent_key in build_model_settings:
+        provider, model = build_model_settings[agent_key]
+        return f"{provider} / {model}"
+    return f"{default_provider} / {default_model}"
+
+
+def render_office_dashboard(
+    default_provider: str,
+    default_model: str,
+    research_model_settings: dict[str, tuple[str, str]],
+    build_model_settings: dict[str, tuple[str, str]],
+    director_provider: str,
+    director_model: str,
+) -> None:
+    projects = project_writer.list_generated_projects()
+    generated_file_count = sum(len(project.files) for project in projects)
+    ready_provider_count = sum(1 for provider in config.PROVIDER_API_KEYS if effective_api_key(provider))
+
+    st.markdown("## 🏢 Office Dashboard")
+    metric_cols = st.columns(4)
+    metric_cols[0].metric("Agents", len(OFFICE_AGENTS))
+    metric_cols[1].metric("Projects", len(projects))
+    metric_cols[2].metric("Files", generated_file_count)
+    metric_cols[3].metric("Providers", ready_provider_count)
+
+    cards_html = ['<div class="office-grid">']
+    for agent in OFFICE_AGENTS:
+        model_label = model_label_for_agent(
+            agent["key"],
+            default_provider,
+            default_model,
+            research_model_settings,
+            build_model_settings,
+            director_provider,
+            director_model,
+        )
+        cards_html.append(
+            f"""
+            <div class="agent-card">
+                <div class="agent-face">{escape(agent["icon"])}</div>
+                <div class="agent-name">{escape(agent["name"])}</div>
+                <div class="agent-role">{escape(agent["role"])}</div>
+                <div class="agent-meta">ทีม: {escape(agent["team"])}<br>โมเดล: {escape(model_label)}</div>
+                <div class="status-pill">พร้อมรับงาน</div>
+            </div>
+            """
+        )
+    cards_html.append("</div>")
+    st.markdown("".join(cards_html), unsafe_allow_html=True)
 
 
 def session_api_key(provider: str) -> str | None:
@@ -377,6 +545,17 @@ with st.sidebar:
         "5. 🧪 **Tester** — ตรวจความพร้อมส่งมอบ"
     )
 
+
+render_office_dashboard(
+    default_provider,
+    default_model,
+    research_model_settings,
+    build_model_settings,
+    director_provider,
+    director_model,
+)
+
+st.divider()
 
 mode_label = st.radio(
     "เลือกประเภทงาน",
