@@ -683,7 +683,7 @@ def render_virtual_agent_office(
         ("78%", "55%", "-24vw", "-72px", "ตรวจให้"),
     ]
     hair_shapes = [
-        "round",
+        "spiky",
         "side",
         "cap",
         "wave",
@@ -771,14 +771,15 @@ def render_virtual_agent_office(
             }}
             .office-shell {{
                 min-height: 620px;
-                border: 1px solid rgba(255,255,255,.14);
+                border: 1px solid rgba(255,255,255,.45);
                 border-radius: 8px;
                 overflow: hidden;
                 background:
-                    radial-gradient(circle at 15% 12%, rgba(103,232,249,.16), transparent 25%),
-                    radial-gradient(circle at 78% 18%, rgba(251,113,133,.12), transparent 23%),
-                    linear-gradient(180deg, #111827, #0b1120);
+                    radial-gradient(circle at 15% 12%, rgba(255,255,255,.72), transparent 24%),
+                    radial-gradient(circle at 78% 18%, rgba(196,181,253,.38), transparent 22%),
+                    linear-gradient(180deg, #ffd8e6, #f6bfd3);
                 position: relative;
+                box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
             }}
             .office-title {{
                 position: absolute;
@@ -787,13 +788,15 @@ def render_virtual_agent_office(
                 z-index: 8;
                 font-weight: 850;
                 font-size: 20px;
+                color: #334155;
+                text-shadow: 0 1px 0 rgba(255,255,255,.75);
             }}
             .office-subtitle {{
                 position: absolute;
                 left: 16px;
                 top: 42px;
                 z-index: 8;
-                color: rgba(248,250,252,.65);
+                color: rgba(71,85,105,.72);
                 font-size: 13px;
             }}
             .floor {{
@@ -802,9 +805,9 @@ def render_virtual_agent_office(
                 border-radius: 8px;
                 border: 1px solid rgba(255,255,255,.1);
                 background:
-                    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px),
-                    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
-                    #172033;
+                    linear-gradient(90deg, rgba(255,255,255,.3) 1px, transparent 1px),
+                    linear-gradient(rgba(255,255,255,.3) 1px, transparent 1px),
+                    linear-gradient(180deg, #fbe7ef, #efb9cd);
                 background-size: 36px 36px;
                 overflow: hidden;
             }}
@@ -817,15 +820,15 @@ def render_virtual_agent_office(
                 min-width: 190px;
                 border: 1px solid rgba(255,255,255,.16);
                 border-radius: 8px;
-                background: rgba(15,23,42,.72);
-                box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+                background: rgba(255,255,255,.38);
+                box-shadow: inset 0 1px 0 rgba(255,255,255,.72), 0 18px 26px rgba(148,63,101,.16);
             }}
             .meeting-room::before {{
                 content: "ห้องประชุม";
                 position: absolute;
                 top: 8px;
                 left: 12px;
-                color: rgba(248,250,252,.68);
+                color: rgba(71,85,105,.74);
                 font-size: 12px;
                 font-weight: 700;
             }}
@@ -836,16 +839,16 @@ def render_virtual_agent_office(
                 width: 60%;
                 height: 34%;
                 border-radius: 999px;
-                background: linear-gradient(180deg, #334155, #1f2937);
-                border: 3px solid rgba(148,163,184,.4);
-                box-shadow: 0 14px 20px rgba(0,0,0,.18);
+                background: linear-gradient(180deg, #fff7fb, #f4a9c2);
+                border: 3px solid rgba(255,255,255,.66);
+                box-shadow: 0 14px 20px rgba(148,63,101,.18);
             }}
             .meeting-chair {{
                 position: absolute;
                 width: 24px;
                 height: 18px;
                 border-radius: 6px;
-                background: rgba(148,163,184,.55);
+                background: rgba(255,255,255,.66);
             }}
             .chair-a {{ left: 23%; top: 22%; }}
             .chair-b {{ right: 23%; top: 22%; }}
@@ -857,7 +860,7 @@ def render_virtual_agent_office(
                 top: 48%;
                 width: 68%;
                 height: 2px;
-                border-top: 2px dashed rgba(148,163,184,.22);
+                border-top: 2px dashed rgba(148,63,101,.26);
             }}
             .desk {{
                 position: absolute;
@@ -876,9 +879,9 @@ def render_virtual_agent_office(
                 border-radius: 8px;
                 display: grid;
                 place-items: center;
-                background: linear-gradient(180deg, var(--a), var(--c));
-                border: 3px solid rgba(15,23,42,.74);
-                box-shadow: 0 10px 16px rgba(0,0,0,.18);
+                background: linear-gradient(180deg, #ffffff, var(--c));
+                border: 3px solid rgba(255,255,255,.7);
+                box-shadow: 0 10px 16px rgba(148,63,101,.18);
                 font-size: 19px;
             }}
             .chair {{
@@ -889,7 +892,8 @@ def render_virtual_agent_office(
                 height: 24px;
                 border-radius: 7px 7px 12px 12px;
                 background: var(--a);
-                border: 3px solid rgba(15,23,42,.72);
+                border: 3px solid rgba(255,255,255,.7);
+                box-shadow: inset 0 2px 0 rgba(255,255,255,.55), 0 8px 14px rgba(148,63,101,.14);
             }}
             .desk-label {{
                 position: absolute;
@@ -898,8 +902,8 @@ def render_virtual_agent_office(
                 max-width: 118px;
                 padding: 2px 7px;
                 border-radius: 999px;
-                background: rgba(15,23,42,.75);
-                color: rgba(248,250,252,.86);
+                background: rgba(255,255,255,.72);
+                color: rgba(71,85,105,.9);
                 font-size: 11px;
                 white-space: nowrap;
                 overflow: hidden;
@@ -909,8 +913,8 @@ def render_virtual_agent_office(
                 position: absolute;
                 left: var(--x);
                 top: var(--y);
-                width: 86px;
-                height: 128px;
+                width: 96px;
+                height: 142px;
                 z-index: 6;
                 animation: consult 9.5s ease-in-out infinite;
                 animation-delay: var(--delay);
@@ -918,145 +922,181 @@ def render_virtual_agent_office(
             .person {{
                 position: absolute;
                 left: 16px;
-                top: 27px;
-                width: 54px;
-                height: 86px;
-                filter: drop-shadow(0 8px 8px rgba(0,0,0,.25));
+                top: 18px;
+                width: 64px;
+                height: 104px;
+                filter: drop-shadow(0 12px 10px rgba(148,63,101,.24));
                 animation: human-bob .62s ease-in-out infinite alternate;
             }}
             .head {{
                 position: absolute;
-                left: 8px;
-                top: 4px;
-                width: 38px;
-                height: 36px;
-                border-radius: 13px 13px 11px 11px;
-                background: #f3c79f;
-                border: 3px solid rgba(15,23,42,.78);
+                left: 4px;
+                top: 0;
+                width: 56px;
+                height: 52px;
+                border-radius: 22px 22px 20px 20px;
+                background:
+                    radial-gradient(circle at 32% 24%, rgba(255,255,255,.82), transparent 16%),
+                    radial-gradient(circle at 70% 65%, #f1a983, transparent 32%),
+                    linear-gradient(145deg, #ffe0c6, #f0b38d);
+                border: 3px solid rgba(255,255,255,.86);
+                box-shadow: inset -7px -9px 14px rgba(150,72,56,.18), inset 5px 6px 10px rgba(255,255,255,.42);
+            }}
+            .head::after {{
+                content: "";
+                position: absolute;
+                left: 9px;
+                top: 8px;
+                width: 14px;
+                height: 9px;
+                border-radius: 50%;
+                background: rgba(255,255,255,.68);
+                transform: rotate(-25deg);
             }}
             .hair {{
                 position: absolute;
                 z-index: 2;
-                background: var(--a);
-                border: 2px solid rgba(15,23,42,.78);
+                background: linear-gradient(145deg, #7c3f22, var(--a));
+                border: 2px solid rgba(255,255,255,.76);
+                box-shadow: inset 0 3px 0 rgba(255,255,255,.25), 0 3px 8px rgba(95,43,23,.22);
+            }}
+            .hair.spiky {{
+                left: 4px; top: -8px; width: 56px; height: 26px; border-radius: 20px 18px 9px 9px;
+                clip-path: polygon(0 65%, 11% 18%, 23% 55%, 37% 0, 48% 56%, 63% 10%, 73% 58%, 90% 18%, 100% 66%, 100% 100%, 0 100%);
             }}
             .hair.round {{
-                left: 5px; top: 0; width: 44px; height: 16px; border-radius: 12px 12px 5px 5px;
+                left: 5px; top: -4px; width: 54px; height: 23px; border-radius: 18px 18px 8px 8px;
             }}
             .hair.side {{
-                left: 4px; top: 1px; width: 42px; height: 20px; border-radius: 12px 4px 12px 4px;
+                left: 4px; top: -4px; width: 54px; height: 27px; border-radius: 18px 6px 18px 7px;
             }}
             .hair.cap {{
-                left: 2px; top: -1px; width: 48px; height: 17px; border-radius: 14px 14px 4px 4px;
+                left: 1px; top: -6px; width: 60px; height: 24px; border-radius: 20px 20px 6px 6px;
             }}
             .hair.wave {{
-                left: 4px; top: -1px; width: 44px; height: 18px; border-radius: 50% 45% 20% 30%;
+                left: 3px; top: -6px; width: 58px; height: 27px; border-radius: 50% 45% 20% 30%;
             }}
             .hair.bun {{
-                left: 7px; top: 0; width: 38px; height: 15px; border-radius: 10px;
+                left: 7px; top: -5px; width: 48px; height: 22px; border-radius: 16px;
             }}
             .hair.bun::after {{
-                content: ""; position: absolute; right: -7px; top: 1px; width: 12px; height: 12px; border-radius: 50%; background: var(--a); border: 2px solid rgba(15,23,42,.78);
+                content: ""; position: absolute; right: -8px; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--a); border: 2px solid rgba(255,255,255,.76);
             }}
             .hair.flat {{
-                left: 4px; top: 3px; width: 44px; height: 12px; border-radius: 4px 4px 9px 9px;
+                left: 4px; top: -1px; width: 55px; height: 17px; border-radius: 7px 7px 12px 12px;
             }}
             .hair.visor {{
-                left: 3px; top: 1px; width: 47px; height: 15px; border-radius: 13px 13px 3px 3px;
+                left: 2px; top: -5px; width: 59px; height: 22px; border-radius: 19px 19px 5px 5px;
             }}
             .hair.visor::after {{
-                content: ""; position: absolute; right: -11px; top: 6px; width: 16px; height: 5px; border-radius: 8px; background: var(--a); border: 2px solid rgba(15,23,42,.78);
+                content: ""; position: absolute; right: -12px; top: 8px; width: 18px; height: 6px; border-radius: 8px; background: var(--a); border: 2px solid rgba(255,255,255,.76);
             }}
             .hair.curl {{
-                left: 5px; top: -1px; width: 43px; height: 19px; border-radius: 11px 11px 8px 8px;
+                left: 4px; top: -7px; width: 55px; height: 27px; border-radius: 18px 18px 12px 12px;
             }}
             .eye {{
                 position: absolute;
-                top: 16px;
-                width: 5px;
-                height: 5px;
+                top: 23px;
+                width: 8px;
+                height: 10px;
                 border-radius: 50%;
-                background: #0f172a;
+                background: radial-gradient(circle at 33% 25%, #ffffff 0 18%, #111827 20% 100%);
             }}
-            .eye.left {{ left: 10px; }}
-            .eye.right {{ right: 10px; }}
+            .eye.left {{ left: 15px; }}
+            .eye.right {{ right: 15px; }}
             .mouth {{
                 position: absolute;
-                left: 14px;
-                top: 25px;
-                width: 11px;
-                height: 5px;
+                left: 22px;
+                top: 36px;
+                width: 12px;
+                height: 6px;
                 border-bottom: 2px solid #0f172a;
                 border-radius: 0 0 10px 10px;
             }}
             .neck {{
                 position: absolute;
-                left: 22px;
-                top: 38px;
+                left: 27px;
+                top: 50px;
                 width: 10px;
-                height: 8px;
+                height: 7px;
                 background: #f3c79f;
-                border-left: 2px solid rgba(15,23,42,.55);
-                border-right: 2px solid rgba(15,23,42,.55);
+                border-left: 2px solid rgba(255,255,255,.45);
+                border-right: 2px solid rgba(255,255,255,.45);
             }}
             .torso {{
                 position: absolute;
-                left: 7px;
-                top: 44px;
-                width: 40px;
-                height: 34px;
-                border-radius: 10px 10px 7px 7px;
-                background: var(--c);
-                border: 3px solid rgba(15,23,42,.78);
+                left: 13px;
+                top: 56px;
+                width: 38px;
+                height: 31px;
+                border-radius: 14px 14px 10px 10px;
+                background:
+                    radial-gradient(circle at 30% 25%, rgba(255,255,255,.95), transparent 18%),
+                    linear-gradient(145deg, #ffffff, #f4f7fb);
+                border: 3px solid rgba(255,255,255,.82);
+                box-shadow: inset -5px -6px 10px rgba(71,85,105,.12), 0 8px 11px rgba(148,63,101,.16);
                 display: grid;
                 place-items: center;
-                font-size: 15px;
+                font-size: 14px;
+            }}
+            .torso span {{
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                background: linear-gradient(145deg, var(--a), var(--c));
+                box-shadow: inset 0 2px 0 rgba(255,255,255,.45);
             }}
             .arm, .leg {{
                 position: absolute;
-                background: var(--a);
-                border: 3px solid rgba(15,23,42,.78);
+                background:
+                    radial-gradient(circle at 35% 25%, rgba(255,255,255,.75), transparent 18%),
+                    linear-gradient(145deg, #ffe0c6, #efad86);
+                border: 3px solid rgba(255,255,255,.78);
                 border-radius: 10px;
                 transform-origin: center top;
             }}
             .arm {{
-                top: 47px;
+                top: 60px;
                 width: 12px;
-                height: 30px;
+                height: 26px;
                 animation: human-arm .62s ease-in-out infinite alternate;
             }}
-            .arm.left {{ left: 0; }}
-            .arm.right {{ right: 0; animation-direction: alternate-reverse; }}
+            .arm.left {{ left: 7px; }}
+            .arm.right {{ right: 7px; animation-direction: alternate-reverse; }}
             .leg {{
-                top: 74px;
-                width: 14px;
-                height: 24px;
+                top: 83px;
+                width: 13px;
+                height: 22px;
                 animation: human-leg .62s ease-in-out infinite alternate;
             }}
-            .leg.left {{ left: 12px; }}
-            .leg.right {{ right: 12px; animation-direction: alternate-reverse; }}
+            .leg.left {{ left: 18px; }}
+            .leg.right {{ right: 18px; animation-direction: alternate-reverse; }}
             .name-tag {{
                 position: absolute;
-                left: -4px;
-                top: 104px;
-                width: 96px;
+                left: -2px;
+                top: 112px;
+                width: 100px;
                 border-radius: 8px;
                 padding: 3px 5px;
-                background: rgba(15,23,42,.82);
-                border: 1px solid rgba(255,255,255,.1);
+                background: rgba(255,255,255,.78);
+                border: 1px solid rgba(255,255,255,.62);
                 text-align: center;
+                box-shadow: 0 8px 12px rgba(148,63,101,.12);
             }}
             .name-tag b {{
                 display: block;
                 font-size: 11px;
                 line-height: 1.15;
+                color: #334155;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
             }}
             .name-tag span {{
                 display: block;
-                color: rgba(248,250,252,.58);
+                color: rgba(71,85,105,.7);
                 font-size: 9px;
                 line-height: 1.2;
                 white-space: nowrap;
@@ -1071,14 +1111,15 @@ def render_virtual_agent_office(
                 max-width: 104px;
                 padding: 4px 7px;
                 border-radius: 9px 9px 9px 2px;
-                background: rgba(248,250,252,.92);
-                color: #0f172a;
+                background: rgba(255,255,255,.94);
+                color: #334155;
                 font-size: 10px;
                 font-weight: 750;
                 opacity: 0;
                 transform: translateY(6px);
                 animation: speak 9.5s ease-in-out infinite;
                 animation-delay: var(--delay);
+                box-shadow: 0 8px 14px rgba(148,63,101,.16);
             }}
             @keyframes consult {{
                 0%, 24% {{ transform: translate(0,0) scaleX(1); }}
@@ -1091,8 +1132,8 @@ def render_virtual_agent_office(
                 42%, 60% {{ opacity: 1; transform: translateY(0); }}
             }}
             @keyframes human-bob {{
-                from {{ transform: translateY(0); }}
-                to {{ transform: translateY(-4px); }}
+                from {{ transform: translateY(0) rotate(-1deg); }}
+                to {{ transform: translateY(-4px) rotate(1deg); }}
             }}
             @keyframes human-arm {{
                 from {{ transform: rotate(18deg); }}
