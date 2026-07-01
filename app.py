@@ -22,6 +22,10 @@ st.set_page_config(
     page_title="🤖 AI Research Office",
     page_icon="🧠",
     layout="wide",
+    initial_sidebar_state="collapsed",
+    menu_items={
+        "About": "AI Research Office",
+    },
 )
 
 
@@ -131,6 +135,41 @@ def apply_page_styles() -> None:
     st.markdown(
         """
         <style>
+        #MainMenu, footer, [data-testid="stToolbar"], [data-testid="stDecoration"] {
+            display: none;
+        }
+        .block-container {
+            padding-top: 2.2rem;
+            padding-bottom: 2rem;
+        }
+        .app-header {
+            padding: .4rem 0 1rem;
+        }
+        .app-title {
+            margin: 0;
+            font-size: clamp(2.2rem, 6vw, 3.6rem);
+            line-height: 1.02;
+            font-weight: 850;
+            letter-spacing: 0;
+        }
+        .app-subtitle {
+            max-width: 860px;
+            margin-top: .65rem;
+            color: rgba(250, 250, 250, .72);
+            font-size: 1.05rem;
+            line-height: 1.55;
+        }
+        .mobile-tip {
+            display: none;
+            margin: .75rem 0 1rem;
+            border: 1px solid rgba(255, 255, 255, .12);
+            border-radius: 8px;
+            padding: .8rem;
+            background: rgba(255, 255, 255, .04);
+            color: rgba(250, 250, 250, .78);
+            font-size: .95rem;
+            line-height: 1.45;
+        }
         .hero-wrap {
             padding: 2.5rem 0 1.5rem;
         }
@@ -173,6 +212,33 @@ def apply_page_styles() -> None:
             background: rgba(255, 75, 75, .06);
         }
         @media (max-width: 900px) {
+            .block-container {
+                padding: 1.1rem 1rem 1.5rem;
+            }
+            .app-header {
+                padding-top: .15rem;
+            }
+            .app-title {
+                font-size: clamp(2.05rem, 12vw, 3rem);
+                line-height: 1.04;
+            }
+            .app-subtitle {
+                font-size: 1rem;
+                line-height: 1.45;
+            }
+            .mobile-tip {
+                display: block;
+            }
+            div[data-testid="stExpander"] details summary p {
+                font-size: 1rem;
+            }
+            div[data-testid="column"] {
+                width: 100% !important;
+                flex: 1 1 100% !important;
+            }
+            button[kind="primary"], button[kind="secondary"] {
+                min-height: 3rem;
+            }
             .feature-grid { grid-template-columns: 1fr; }
             .hero-title { font-size: 2.25rem; }
         }
@@ -214,6 +280,24 @@ def render_landing(show_login: bool = False) -> None:
 
     if show_login:
         st.markdown("### เข้าสู่ระบบ")
+
+
+def render_app_header() -> None:
+    st.markdown(
+        """
+        <div class="app-header">
+            <div class="app-title">🧠 AI Research Office</div>
+            <div class="app-subtitle">
+                ทีมเอเจนต์ AI ช่วยวิจัย วางแผน และเตรียมสร้างโปรเจกต์ เลือกโมเดลแยกตามทีมได้
+            </div>
+        </div>
+        <div class="mobile-tip">
+            ใช้มือถือได้ง่ายขึ้น: กรอก API key ใน “ตั้งค่าด่วนสำหรับมือถือ” ด้านล่าง
+            แล้วเลือกโหมดงานก่อนกดเริ่ม
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def provider_index(provider: str) -> int:
@@ -669,13 +753,52 @@ def render_account_panel() -> None:
         st.rerun()
 
 
+def render_quick_mobile_settings() -> None:
+    with st.expander("📱 ตั้งค่าด่วนสำหรับมือถือ", expanded=False):
+        st.caption("กรอก API key ตรงนี้ได้เลย ไม่ต้องเปิด sidebar ค่าใช้เฉพาะ session นี้")
+        status_cols = st.columns(3)
+        for index, (provider, env_name) in enumerate(config.PROVIDER_API_KEYS.items()):
+            main_key = f"{SESSION_KEY_PREFIX}{provider}"
+            mobile_key = f"mobile_{main_key}"
+            if mobile_key not in st.session_state:
+                st.session_state[mobile_key] = st.session_state.get(main_key, "")
+
+            value = st.text_input(
+                provider,
+                type="password",
+                key=mobile_key,
+                placeholder=f"วาง {env_name}",
+            )
+            if value.strip():
+                st.session_state[main_key] = value.strip()
+
+            status_label = "พร้อม" if effective_api_key(provider) else "ยังไม่มี"
+            status_cols[index % 3].metric(provider, status_label)
+
+        action_cols = st.columns(2)
+        if action_cols[0].button("ใช้โหมดประหยัด quota", use_container_width=True):
+            st.session_state["economy_mode"] = True
+            st.rerun()
+        if action_cols[1].button("เปิดสร้างไฟล์ Build", use_container_width=True):
+            st.session_state["write_files_mode"] = True
+            st.rerun()
+
+        if st.button("ล้าง API keys ใน session นี้", use_container_width=True, key="mobile_clear_api_keys"):
+            for provider in config.PROVIDER_API_KEYS:
+                st.session_state[f"{SESSION_KEY_PREFIX}{provider}"] = ""
+                st.session_state[f"mobile_{SESSION_KEY_PREFIX}{provider}"] = ""
+            st.rerun()
+
+
 apply_page_styles()
 require_login()
 
-st.title("🧠 AI Research Office")
-st.caption("ทีมเอเจนต์ AI ช่วยวิจัย วางแผน และเตรียมสร้างโปรเจกต์ — เลือกโมเดลแยกตามทีมได้")
+render_app_header()
 with st.expander("👋 เริ่มต้นใช้งาน", expanded=False):
     render_landing(show_login=False)
+
+
+render_quick_mobile_settings()
 
 
 with st.sidebar:
@@ -714,15 +837,17 @@ with st.sidebar:
                 st.session_state[f"{SESSION_KEY_PREFIX}{provider}"] = ""
             st.rerun()
 
-    advanced_models = st.checkbox("เลือกโมเดลแยกต่อ agent", value=False)
+    advanced_models = st.checkbox("เลือกโมเดลแยกต่อ agent", value=False, key="advanced_models")
     economy_mode = st.checkbox(
         "โหมดประหยัด quota",
         value=True,
+        key="economy_mode",
         help="ใช้ agent เดียวต่อหนึ่งงาน เหมาะกับ free tier หรือช่วงโดน rate limit",
     )
     write_files_mode = st.checkbox(
         "สร้างไฟล์โปรเจกต์จริงจากผลลัพธ์ Build",
         value=False,
+        key="write_files_mode",
         help="เขียนไฟล์จาก Markdown code blocks ลง generated_projects เฉพาะโหมดสร้างโปรเจกต์",
     )
 
@@ -776,7 +901,6 @@ with st.sidebar:
         "4. 💻 **Developer** — เตรียม implementation\n"
         "5. 🧪 **Tester** — ตรวจความพร้อมส่งมอบ"
     )
-
 
 render_office_dashboard(
     default_provider,
