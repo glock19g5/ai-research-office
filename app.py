@@ -1,7 +1,6 @@
 """Streamlit UI for AI Research Office."""
 
 import importlib
-from html import escape
 
 import streamlit as st
 
@@ -148,51 +147,8 @@ def apply_page_styles() -> None:
             margin: .5rem 0;
             background: rgba(255, 75, 75, .06);
         }
-        .office-grid {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: .8rem;
-            margin-top: .8rem;
-        }
-        .agent-card {
-            border: 1px solid rgba(250, 250, 250, .12);
-            border-radius: 8px;
-            padding: .95rem;
-            background: rgba(255, 255, 255, .035);
-            min-height: 150px;
-        }
-        .agent-face {
-            font-size: 1.8rem;
-            margin-bottom: .25rem;
-        }
-        .agent-name {
-            font-weight: 800;
-            font-size: 1.05rem;
-            margin-bottom: .25rem;
-        }
-        .agent-role {
-            color: rgba(250, 250, 250, .7);
-            font-size: .9rem;
-            min-height: 42px;
-        }
-        .agent-meta {
-            margin-top: .6rem;
-            font-size: .82rem;
-            color: rgba(250, 250, 250, .58);
-        }
-        .status-pill {
-            display: inline-block;
-            margin-top: .55rem;
-            padding: .18rem .5rem;
-            border-radius: 999px;
-            border: 1px solid rgba(35, 197, 94, .35);
-            color: #7ee787;
-            background: rgba(35, 197, 94, .08);
-            font-size: .78rem;
-        }
         @media (max-width: 900px) {
             .feature-grid { grid-template-columns: 1fr; }
-            .office-grid { grid-template-columns: 1fr; }
             .hero-title { font-size: 2.25rem; }
         }
         </style>
@@ -306,30 +262,33 @@ def render_office_dashboard(
     metric_cols[2].metric("Files", generated_file_count)
     metric_cols[3].metric("Providers", ready_provider_count)
 
-    cards_html = ['<div class="office-grid">']
-    for agent in OFFICE_AGENTS:
-        model_label = model_label_for_agent(
-            agent["key"],
-            default_provider,
-            default_model,
-            research_model_settings,
-            build_model_settings,
-            director_provider,
-            director_model,
-        )
-        cards_html.append(
-            f"""
-            <div class="agent-card">
-                <div class="agent-face">{escape(agent["icon"])}</div>
-                <div class="agent-name">{escape(agent["name"])}</div>
-                <div class="agent-role">{escape(agent["role"])}</div>
-                <div class="agent-meta">ทีม: {escape(agent["team"])}<br>โมเดล: {escape(model_label)}</div>
-                <div class="status-pill">พร้อมรับงาน</div>
-            </div>
-            """
-        )
-    cards_html.append("</div>")
-    st.markdown("".join(cards_html), unsafe_allow_html=True)
+    st.markdown("### ทีม Agent")
+    for start in range(0, len(OFFICE_AGENTS), 2):
+        columns = st.columns(2)
+        for offset, column in enumerate(columns):
+            agent_index = start + offset
+            if agent_index >= len(OFFICE_AGENTS):
+                continue
+
+            agent = OFFICE_AGENTS[agent_index]
+            model_label = model_label_for_agent(
+                agent["key"],
+                default_provider,
+                default_model,
+                research_model_settings,
+                build_model_settings,
+                director_provider,
+                director_model,
+            )
+
+            with column:
+                with st.container(border=True):
+                    header_cols = st.columns([0.16, 0.84])
+                    header_cols[0].markdown(f"### {agent['icon']}")
+                    header_cols[1].markdown(f"**{agent['name']}**")
+                    header_cols[1].caption(agent["role"])
+                    st.caption(f"ทีม: {agent['team']} | โมเดล: {model_label}")
+                    st.success("พร้อมรับงาน")
 
 
 def session_api_key(provider: str) -> str | None:
