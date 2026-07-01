@@ -2,6 +2,7 @@
 
 import io
 import importlib
+import re
 from html import escape
 
 import streamlit as st
@@ -884,6 +885,47 @@ def combine_user_input(user_input: str, attachment_context: str) -> str:
     )
 
 
+def split_markdown_sections(markdown_text: str) -> list[tuple[str, str]]:
+    sections: list[tuple[str, list[str]]] = []
+    current_title = "ภาพรวม"
+    current_lines: list[str] = []
+    in_code_block = False
+
+    for line in markdown_text.splitlines():
+        if line.strip().startswith("```"):
+            in_code_block = not in_code_block
+
+        heading_match = None if in_code_block else re.match(r"^(#{1,3})\s+(.+?)\s*$", line)
+        if heading_match:
+            if current_lines:
+                sections.append((current_title, current_lines))
+            current_title = re.sub(r"[#*_`]", "", heading_match.group(2)).strip()[:90] or "หัวข้อ"
+            current_lines = [line]
+        else:
+            current_lines.append(line)
+
+    if current_lines:
+        sections.append((current_title, current_lines))
+
+    return [(title, "\n".join(lines).strip()) for title, lines in sections if "\n".join(lines).strip()]
+
+
+def render_compact_markdown(title: str, markdown_text: str) -> None:
+    st.markdown(f"## {title}")
+    sections = split_markdown_sections(markdown_text)
+
+    if len(sections) <= 1:
+        with st.expander("เปิดอ่านผลลัพธ์ทั้งหมด", expanded=False):
+            st.markdown(markdown_text)
+        return
+
+    st.caption("กดเปิดอ่านทีละหัวข้อ เพื่อลดความแน่นของหน้าแอป")
+    for index, (section_title, section_body) in enumerate(sections, start=1):
+        label = f"{index}. {section_title}"
+        with st.expander(label, expanded=False):
+            st.markdown(section_body)
+
+
 def require_login() -> None:
     if st.session_state.get("authenticated_user"):
         return
@@ -1244,8 +1286,7 @@ if st.button(run_button_label, type="primary", use_container_width=True):
                 st.markdown(director_brief)
 
             final_output = getattr(result, "raw", str(result))
-            st.markdown(f"## {result_title}")
-            st.markdown(final_output)
+            render_compact_markdown(result_title, final_output)
 
             if mode_key == "build" and write_files_mode:
                 project_dir, generated_files = project_writer.write_project_files(display_command, final_output)
@@ -1289,105 +1330,104 @@ if st.button(run_button_label, type="primary", use_container_width=True):
 
 
 st.divider()
-st.markdown("## 📚 Project Gallery")
 projects = project_writer.list_generated_projects()
+gallery_title = f"📚 Project Gallery ({len(projects)} โปรเจกต์)"
 
-if not projects:
-    st.info("ยังไม่มีโปรเจกต์ที่สร้างไฟล์จริง เปิด `สร้างไฟล์โปรเจกต์จริงจากผลลัพธ์ Build` แล้วรัน Build Mode ก่อนครับ")
-else:
-    project_names = [
-        f"{project.name} — {project.modified_at.strftime('%Y-%m-%d %H:%M')} — {len(project.files)} files"
-        for project in projects
-    ]
-    selected_project_label = st.selectbox("เลือกโปรเจกต์", options=project_names)
-    selected_project = projects[project_names.index(selected_project_label)]
-
-    st.caption(f"โฟลเดอร์: `{selected_project.path}`")
-
-    with st.expander("✏️ แก้ข้อมูลโปรเจกต์", expanded=False):
-        edit_tab_team, edit_tab_site = st.tabs(["ทีมงาน", "ข้อความเว็บ"])
-        with edit_tab_team:
-            team_name = st.text_input(
-                "เปลี่ยนชื่อทีมงานทั้งหมด",
-                value="นาย ชลธิศ จริยะสุนทรดี",
-                key=f"team_name_{selected_project.name}",
-            )
-            if st.button("บันทึกชื่อทีมงานทั้งหมด", key=f"save_team_{selected_project.name}"):
-                changed_count = project_writer.update_team_member_names(selected_project, team_name.strip())
-                if changed_count:
-                    st.success(f"เปลี่ยนชื่อทีมงานแล้ว {changed_count} จุด")
-                    st.rerun()
-                else:
-                    st.warning("ไม่พบข้อมูล teamMembers ใน script.js ของโปรเจกต์นี้")
-
-        with edit_tab_site:
-            site_content = project_writer.read_site_content(selected_project)
-            page_title = st.text_input("Page title", value=site_content.page_title, key=f"title_{selected_project.name}")
-            brand_name = st.text_input("Brand / Header", value=site_content.brand_name, key=f"brand_{selected_project.name}")
-            hero_title = st.text_input("Hero title", value=site_content.hero_title, key=f"hero_title_{selected_project.name}")
-            hero_text_1 = st.text_area("Hero paragraph 1", value=site_content.hero_text_1, key=f"hero_p1_{selected_project.name}")
-            hero_text_2 = st.text_area("Hero paragraph 2", value=site_content.hero_text_2, key=f"hero_p2_{selected_project.name}")
-            contact_email = st.text_input("Contact email", value=site_content.contact_email, key=f"email_{selected_project.name}")
-            contact_phone = st.text_input("Contact phone", value=site_content.contact_phone, key=f"phone_{selected_project.name}")
-            contact_address = st.text_area("Contact address", value=site_content.contact_address, key=f"addr_{selected_project.name}")
-
-            if st.button("บันทึกข้อความเว็บ", key=f"save_site_{selected_project.name}"):
-                ok = project_writer.update_site_content(
-                    selected_project,
-                    project_writer.SiteContent(
-                        page_title=page_title.strip(),
-                        brand_name=brand_name.strip(),
-                        hero_title=hero_title.strip(),
-                        hero_text_1=hero_text_1.strip(),
-                        hero_text_2=hero_text_2.strip(),
-                        contact_email=contact_email.strip(),
-                        contact_phone=contact_phone.strip(),
-                        contact_address=contact_address.strip(),
-                    ),
-                )
-                if ok:
-                    st.success("บันทึกข้อความเว็บแล้ว")
-                    st.rerun()
-                else:
-                    st.warning("ไม่พบ index.html สำหรับโปรเจกต์นี้")
-
-    preview_html = project_writer.find_preview_html(selected_project)
-
-    if preview_html:
-        preview_url = project_writer.html_data_url(preview_html)
-        st.markdown("### 🖥️ Preview")
-        st.caption(f"ไฟล์ preview: `{project_writer.relative_project_file(selected_project, preview_html)}`")
-        st.link_button("เปิด preview ในแท็บใหม่", preview_url)
-        st.components.v1.iframe(preview_url, height=520, scrolling=True)
+show_gallery = st.toggle(gallery_title, value=False, key="show_project_gallery")
+if show_gallery:
+    if not projects:
+        st.info("ยังไม่มีโปรเจกต์ที่สร้างไฟล์จริง เปิด `สร้างไฟล์โปรเจกต์จริงจากผลลัพธ์ Build` แล้วรัน Build Mode ก่อนครับ")
     else:
-        st.info("โปรเจกต์นี้ยังไม่มีไฟล์ HTML สำหรับ preview")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("### ไฟล์ในโปรเจกต์")
-        for path in selected_project.files:
-            st.code(project_writer.relative_project_file(selected_project, path))
-
-    with col2:
-        preview_options = [
-            project_writer.relative_project_file(selected_project, path)
-            for path in selected_project.files
-            if path.suffix.lower() in {".md", ".html", ".css", ".js", ".py", ".txt", ".json"}
+        project_names = [
+            f"{project.name} — {project.modified_at.strftime('%Y-%m-%d %H:%M')} — {len(project.files)} files"
+            for project in projects
         ]
-        if preview_options:
-            selected_file_name = st.selectbox("ดูตัวอย่างไฟล์", options=preview_options)
-            selected_file = selected_project.path / selected_file_name
-            content = selected_file.read_text(encoding="utf-8", errors="replace")
-            suffix = selected_file.suffix.lower().lstrip(".") or "text"
-            st.download_button(
-                "ดาวน์โหลดไฟล์นี้",
-                data=content,
-                file_name=selected_file.name,
-                mime="text/plain",
-            )
-            if suffix == "md":
-                st.markdown(content)
+        selected_project_label = st.selectbox("เลือกโปรเจกต์", options=project_names)
+        selected_project = projects[project_names.index(selected_project_label)]
+
+        st.caption(f"โฟลเดอร์: `{selected_project.path}`")
+
+        preview_html = project_writer.find_preview_html(selected_project)
+        with st.expander("🖥️ Preview", expanded=False):
+            if preview_html:
+                preview_url = project_writer.html_data_url(preview_html)
+                st.caption(f"ไฟล์ preview: `{project_writer.relative_project_file(selected_project, preview_html)}`")
+                st.link_button("เปิด preview ในแท็บใหม่", preview_url)
+                st.components.v1.iframe(preview_url, height=520, scrolling=True)
             else:
-                st.code(content, language=suffix)
-        else:
-            st.info("โปรเจกต์นี้ยังไม่มีไฟล์ที่ preview ได้")
+                st.info("โปรเจกต์นี้ยังไม่มีไฟล์ HTML สำหรับ preview")
+
+        with st.expander("✏️ แก้ข้อมูลโปรเจกต์", expanded=False):
+            edit_tab_team, edit_tab_site = st.tabs(["ทีมงาน", "ข้อความเว็บ"])
+            with edit_tab_team:
+                team_name = st.text_input(
+                    "เปลี่ยนชื่อทีมงานทั้งหมด",
+                    value="นาย ชลธิศ จริยะสุนทรดี",
+                    key=f"team_name_{selected_project.name}",
+                )
+                if st.button("บันทึกชื่อทีมงานทั้งหมด", key=f"save_team_{selected_project.name}"):
+                    changed_count = project_writer.update_team_member_names(selected_project, team_name.strip())
+                    if changed_count:
+                        st.success(f"เปลี่ยนชื่อทีมงานแล้ว {changed_count} จุด")
+                        st.rerun()
+                    else:
+                        st.warning("ไม่พบข้อมูล teamMembers ใน script.js ของโปรเจกต์นี้")
+
+            with edit_tab_site:
+                site_content = project_writer.read_site_content(selected_project)
+                page_title = st.text_input("Page title", value=site_content.page_title, key=f"title_{selected_project.name}")
+                brand_name = st.text_input("Brand / Header", value=site_content.brand_name, key=f"brand_{selected_project.name}")
+                hero_title = st.text_input("Hero title", value=site_content.hero_title, key=f"hero_title_{selected_project.name}")
+                hero_text_1 = st.text_area("Hero paragraph 1", value=site_content.hero_text_1, key=f"hero_p1_{selected_project.name}")
+                hero_text_2 = st.text_area("Hero paragraph 2", value=site_content.hero_text_2, key=f"hero_p2_{selected_project.name}")
+                contact_email = st.text_input("Contact email", value=site_content.contact_email, key=f"email_{selected_project.name}")
+                contact_phone = st.text_input("Contact phone", value=site_content.contact_phone, key=f"phone_{selected_project.name}")
+                contact_address = st.text_area("Contact address", value=site_content.contact_address, key=f"addr_{selected_project.name}")
+
+                if st.button("บันทึกข้อความเว็บ", key=f"save_site_{selected_project.name}"):
+                    ok = project_writer.update_site_content(
+                        selected_project,
+                        project_writer.SiteContent(
+                            page_title=page_title.strip(),
+                            brand_name=brand_name.strip(),
+                            hero_title=hero_title.strip(),
+                            hero_text_1=hero_text_1.strip(),
+                            hero_text_2=hero_text_2.strip(),
+                            contact_email=contact_email.strip(),
+                            contact_phone=contact_phone.strip(),
+                            contact_address=contact_address.strip(),
+                        ),
+                    )
+                    if ok:
+                        st.success("บันทึกข้อความเว็บแล้ว")
+                        st.rerun()
+                    else:
+                        st.warning("ไม่พบ index.html สำหรับโปรเจกต์นี้")
+
+        with st.expander("📁 ไฟล์ในโปรเจกต์", expanded=False):
+            for path in selected_project.files:
+                st.code(project_writer.relative_project_file(selected_project, path))
+
+        with st.expander("🔎 อ่านไฟล์", expanded=False):
+            preview_options = [
+                project_writer.relative_project_file(selected_project, path)
+                for path in selected_project.files
+                if path.suffix.lower() in {".md", ".html", ".css", ".js", ".py", ".txt", ".json"}
+            ]
+            if preview_options:
+                selected_file_name = st.selectbox("ดูตัวอย่างไฟล์", options=preview_options)
+                selected_file = selected_project.path / selected_file_name
+                content = selected_file.read_text(encoding="utf-8", errors="replace")
+                suffix = selected_file.suffix.lower().lstrip(".") or "text"
+                st.download_button(
+                    "ดาวน์โหลดไฟล์นี้",
+                    data=content,
+                    file_name=selected_file.name,
+                    mime="text/plain",
+                )
+                if suffix == "md":
+                    st.markdown(content)
+                else:
+                    st.code(content, language=suffix)
+            else:
+                st.info("โปรเจกต์นี้ยังไม่มีไฟล์ที่ preview ได้")
