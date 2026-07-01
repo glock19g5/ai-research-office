@@ -2,6 +2,7 @@
 
 import io
 import importlib
+import json
 import re
 from html import escape
 
@@ -1180,6 +1181,451 @@ def render_virtual_agent_office(
     )
 
 
+def render_three_agent_office(
+    default_provider: str,
+    default_model: str,
+    research_model_settings: dict[str, tuple[str, str]],
+    build_model_settings: dict[str, tuple[str, str]],
+    director_provider: str,
+    director_model: str,
+) -> None:
+    desk_positions = [
+        [-4.1, 0.0, -2.2],
+        [-1.4, 0.0, -2.5],
+        [1.4, 0.0, -2.5],
+        [4.1, 0.0, -2.0],
+        [-4.1, 0.0, 2.0],
+        [-1.4, 0.0, 2.5],
+        [1.4, 0.0, 2.5],
+        [4.1, 0.0, 2.0],
+    ]
+    meeting_positions = [
+        [-1.1, 0.0, -0.35],
+        [-0.4, 0.0, -0.65],
+        [0.4, 0.0, -0.65],
+        [1.1, 0.0, -0.35],
+        [-1.1, 0.0, 0.55],
+        [-0.35, 0.0, 0.85],
+        [0.35, 0.0, 0.85],
+        [1.1, 0.0, 0.55],
+    ]
+    speech_lines = [
+        "ขอ brief",
+        "มี insight",
+        "เทียบข้อมูล",
+        "ฟันธง",
+        "แตก scope",
+        "วางระบบ",
+        "เริ่ม build",
+        "ตรวจให้",
+    ]
+
+    scene_agents = []
+    for index, agent in enumerate(OFFICE_AGENTS):
+        model_label = model_label_for_agent(
+            agent["key"],
+            default_provider,
+            default_model,
+            research_model_settings,
+            build_model_settings,
+            director_provider,
+            director_model,
+        )
+        scene_agents.append(
+            {
+                "name": agent["name"],
+                "role": agent["role"],
+                "team": agent["team"],
+                "icon": agent["icon"],
+                "color": agent["color"],
+                "accent": agent["accent"],
+                "model": model_label,
+                "home": desk_positions[index],
+                "meet": meeting_positions[index],
+                "speech": speech_lines[index],
+                "phase": index * 0.7,
+            }
+        )
+
+    scene_json = json.dumps(scene_agents, ensure_ascii=False)
+    html = """
+    <!doctype html>
+    <html>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <style>
+        * { box-sizing: border-box; }
+        body {
+          margin: 0;
+          overflow: hidden;
+          font-family: Inter, Segoe UI, sans-serif;
+          background: transparent;
+        }
+        #wrap {
+          position: relative;
+          width: 100%;
+          height: 640px;
+          border-radius: 8px;
+          overflow: hidden;
+          background: linear-gradient(180deg, #ffe0ec, #f6bdd3);
+          border: 1px solid rgba(255,255,255,.65);
+        }
+        #stage {
+          position: absolute;
+          inset: 0;
+        }
+        .hud {
+          position: absolute;
+          left: 16px;
+          top: 14px;
+          z-index: 3;
+          color: #334155;
+          text-shadow: 0 1px 0 rgba(255,255,255,.75);
+          pointer-events: none;
+        }
+        .hud b {
+          display: block;
+          font-size: 20px;
+          line-height: 1.2;
+        }
+        .hud span {
+          display: block;
+          margin-top: 3px;
+          color: rgba(51,65,85,.72);
+          font-size: 13px;
+        }
+        .loading {
+          position: absolute;
+          inset: 0;
+          display: grid;
+          place-items: center;
+          color: #334155;
+          font-weight: 800;
+          z-index: 2;
+          background: linear-gradient(180deg, #ffe0ec, #f6bdd3);
+        }
+        @media (max-width: 620px) {
+          #wrap { height: 720px; }
+          .hud b { font-size: 17px; }
+          .hud span { font-size: 11px; max-width: 250px; }
+        }
+      </style>
+    </head>
+    <body>
+      <div id="wrap">
+        <div id="stage"></div>
+        <div class="hud">
+          <b>3D Agent Animation Office</b>
+          <span>Chibi agents walk from desks into the meeting area to consult together.</span>
+        </div>
+        <div class="loading" id="loading">กำลังโหลดออฟฟิศ 3D...</div>
+      </div>
+
+      <script type="module">
+        import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+
+        const AGENTS = __AGENTS_JSON__;
+        const mount = document.getElementById("stage");
+        const loading = document.getElementById("loading");
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xffd8e6);
+        scene.fog = new THREE.Fog(0xffd8e6, 14, 25);
+
+        const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+        camera.position.set(6.8, 6.4, 8.6);
+        camera.lookAt(0, 0.7, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        mount.appendChild(renderer.domElement);
+
+        const hemi = new THREE.HemisphereLight(0xffffff, 0xe9a8c1, 2.1);
+        scene.add(hemi);
+        const key = new THREE.DirectionalLight(0xffffff, 2.6);
+        key.position.set(5, 8, 6);
+        key.castShadow = true;
+        key.shadow.mapSize.set(1024, 1024);
+        scene.add(key);
+        const fill = new THREE.PointLight(0xfff0f6, 1.2, 18);
+        fill.position.set(-5, 4, -3);
+        scene.add(fill);
+
+        const mat = {
+          floor: new THREE.MeshPhysicalMaterial({ color: 0xf3bed2, roughness: .48, clearcoat: .35, clearcoatRoughness: .2 }),
+          wall: new THREE.MeshPhysicalMaterial({ color: 0xffedf4, roughness: .42, clearcoat: .25 }),
+          white: new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: .32, clearcoat: .65, clearcoatRoughness: .18 }),
+          skin: new THREE.MeshPhysicalMaterial({ color: 0xffcfad, roughness: .35, clearcoat: .5, clearcoatRoughness: .16 }),
+          dark: new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: .42 }),
+          glass: new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: .12, transmission: .05, transparent: true, opacity: .62 }),
+        };
+
+        function addBox(size, pos, material, radius = false) {
+          const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
+          mesh.position.set(...pos);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          scene.add(mesh);
+          return mesh;
+        }
+
+        function makeCanvasLabel(text, bg = "rgba(255,255,255,.90)", color = "#334155") {
+          const canvas = document.createElement("canvas");
+          canvas.width = 420;
+          canvas.height = 128;
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = bg;
+          roundRect(ctx, 12, 18, 396, 82, 24);
+          ctx.fill();
+          ctx.fillStyle = color;
+          ctx.font = "700 34px Segoe UI, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(text, 210, 59, 360);
+          const texture = new THREE.CanvasTexture(canvas);
+          const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
+          sprite.scale.set(1.85, .56, 1);
+          return sprite;
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+          ctx.beginPath();
+          ctx.moveTo(x + r, y);
+          ctx.arcTo(x + w, y, x + w, y + h, r);
+          ctx.arcTo(x + w, y + h, x, y + h, r);
+          ctx.arcTo(x, y + h, x, y, r);
+          ctx.arcTo(x, y, x + w, y, r);
+          ctx.closePath();
+        }
+
+        function hexMat(hex, clearcoat = .5) {
+          return new THREE.MeshPhysicalMaterial({
+            color: new THREE.Color(hex),
+            roughness: .34,
+            clearcoat,
+            clearcoatRoughness: .16,
+          });
+        }
+
+        function addRoundedSphere(radius, pos, material, scale = [1, 1, 1]) {
+          const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 24), material);
+          mesh.position.set(...pos);
+          mesh.scale.set(...scale);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          return mesh;
+        }
+
+        function addDesk(agent, i) {
+          const group = new THREE.Group();
+          const x = agent.home[0];
+          const z = agent.home[2];
+          const topMat = hexMat(agent.color, .55);
+          const accentMat = hexMat(agent.accent, .45);
+
+          const top = new THREE.Mesh(new THREE.BoxGeometry(1.1, .18, .68), topMat);
+          top.position.set(0, .55, 0);
+          top.castShadow = true;
+          top.receiveShadow = true;
+          group.add(top);
+
+          for (const dx of [-.42, .42]) {
+            for (const dz of [-.24, .24]) {
+              const leg = new THREE.Mesh(new THREE.CylinderGeometry(.045, .055, .55, 12), accentMat);
+              leg.position.set(dx, .25, dz);
+              leg.castShadow = true;
+              group.add(leg);
+            }
+          }
+
+          const chair = new THREE.Mesh(new THREE.BoxGeometry(.46, .32, .42), accentMat);
+          chair.position.set(0, .24, .72);
+          chair.castShadow = true;
+          chair.receiveShadow = true;
+          group.add(chair);
+
+          const label = makeCanvasLabel(agent.name);
+          label.position.set(0, 1.12, 0);
+          group.add(label);
+
+          group.position.set(x, 0, z);
+          scene.add(group);
+        }
+
+        function createChibi(agent, i) {
+          const group = new THREE.Group();
+          const hairMat = hexMat(agent.accent, .65);
+          const shirtMat = mat.white;
+          const accentMat = hexMat(agent.color, .55);
+
+          const head = addRoundedSphere(.38, [0, 1.42, 0], mat.skin, [1.08, 1.02, .96]);
+          group.add(head);
+
+          const face = new THREE.Group();
+          for (const x of [-.14, .14]) {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(.035, 16, 12), mat.dark);
+            eye.position.set(x, 1.43, .36);
+            face.add(eye);
+          }
+          const smile = new THREE.Mesh(new THREE.TorusGeometry(.085, .008, 8, 24, Math.PI), mat.dark);
+          smile.position.set(0, 1.31, .37);
+          smile.rotation.z = Math.PI;
+          face.add(smile);
+          group.add(face);
+
+          const hairBase = new THREE.Mesh(new THREE.SphereGeometry(.4, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), hairMat);
+          hairBase.position.set(0, 1.57, -.02);
+          hairBase.scale.set(1.08, .62, 1);
+          hairBase.castShadow = true;
+          group.add(hairBase);
+
+          for (let s = 0; s < 5; s++) {
+            const spike = new THREE.Mesh(new THREE.ConeGeometry(.085, .28, 14), hairMat);
+            spike.position.set((s - 2) * .13, 1.84 - Math.abs(s - 2) * .02, .02 - Math.abs(s - 2) * .03);
+            spike.rotation.z = (s - 2) * -.28;
+            spike.rotation.x = .15;
+            spike.castShadow = true;
+            group.add(spike);
+          }
+
+          const body = new THREE.Mesh(new THREE.CapsuleGeometry(.24, .34, 8, 20), shirtMat);
+          body.position.set(0, .86, 0);
+          body.scale.set(1, .9, .82);
+          body.castShadow = true;
+          body.receiveShadow = true;
+          group.add(body);
+
+          const badge = new THREE.Mesh(new THREE.SphereGeometry(.12, 18, 12), accentMat);
+          badge.position.set(0, .93, .22);
+          badge.scale.set(1, 1, .25);
+          group.add(badge);
+
+          const limbs = [];
+          for (const side of [-1, 1]) {
+            const arm = new THREE.Mesh(new THREE.CapsuleGeometry(.055, .38, 8, 12), mat.skin);
+            arm.position.set(side * .31, .88, .03);
+            arm.rotation.z = side * .22;
+            arm.castShadow = true;
+            group.add(arm);
+            limbs.push({ mesh: arm, side, type: "arm" });
+
+            const leg = new THREE.Mesh(new THREE.CapsuleGeometry(.065, .36, 8, 12), accentMat);
+            leg.position.set(side * .12, .38, 0);
+            leg.castShadow = true;
+            group.add(leg);
+            limbs.push({ mesh: leg, side, type: "leg" });
+          }
+
+          const speech = makeCanvasLabel(agent.speech, "rgba(255,255,255,.94)");
+          speech.position.set(0, 2.05, 0);
+          speech.visible = false;
+          group.add(speech);
+
+          const name = makeCanvasLabel(agent.name, "rgba(255,255,255,.82)");
+          name.position.set(0, .05, 0);
+          name.scale.set(1.25, .38, 1);
+          group.add(name);
+
+          group.position.set(agent.home[0], .02, agent.home[2]);
+          group.userData = {
+            home: new THREE.Vector3(...agent.home),
+            meet: new THREE.Vector3(...agent.meet),
+            phase: agent.phase,
+            limbs,
+            speech,
+          };
+          scene.add(group);
+          return group;
+        }
+
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(10.5, .18, 7.2), mat.floor);
+        floor.position.y = -.1;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        const backWall = new THREE.Mesh(new THREE.BoxGeometry(10.5, 3.4, .18), mat.wall);
+        backWall.position.set(0, 1.6, -3.68);
+        backWall.receiveShadow = true;
+        scene.add(backWall);
+
+        const leftWall = new THREE.Mesh(new THREE.BoxGeometry(.18, 3.4, 7.2), mat.wall);
+        leftWall.position.set(-5.25, 1.6, 0);
+        leftWall.receiveShadow = true;
+        scene.add(leftWall);
+
+        const rug = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 1.55, .04, 64), new THREE.MeshPhysicalMaterial({ color: 0xfff7fb, roughness: .5, clearcoat: .25 }));
+        rug.position.set(0, .02, .08);
+        rug.scale.z = .62;
+        rug.receiveShadow = true;
+        scene.add(rug);
+
+        const meetingTable = new THREE.Mesh(new THREE.CylinderGeometry(.95, 1.08, .3, 48), new THREE.MeshPhysicalMaterial({ color: 0xf4a9c2, roughness: .36, clearcoat: .55 }));
+        meetingTable.position.set(0, .32, .08);
+        meetingTable.castShadow = true;
+        meetingTable.receiveShadow = true;
+        scene.add(meetingTable);
+
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+          const chair = new THREE.Mesh(new THREE.BoxGeometry(.34, .26, .34), mat.white);
+          chair.position.set(Math.cos(a) * 1.36, .18, .08 + Math.sin(a) * .92);
+          chair.rotation.y = -a;
+          chair.castShadow = true;
+          chair.receiveShadow = true;
+          scene.add(chair);
+        }
+
+        AGENTS.forEach(addDesk);
+        const chibis = AGENTS.map(createChibi);
+
+        function resize() {
+          const rect = mount.getBoundingClientRect();
+          renderer.setSize(rect.width, rect.height, false);
+          camera.aspect = rect.width / Math.max(rect.height, 1);
+          camera.updateProjectionMatrix();
+        }
+        window.addEventListener("resize", resize);
+        resize();
+        loading.style.display = "none";
+
+        const clock = new THREE.Clock();
+        function animate() {
+          const time = clock.getElapsedTime();
+          const orbit = Math.sin(time * .14) * .22;
+          camera.position.x = 6.8 * Math.cos(orbit);
+          camera.position.z = 8.6 + Math.sin(orbit) * .45;
+          camera.lookAt(0, .75, 0);
+
+          for (const chibi of chibis) {
+            const data = chibi.userData;
+            const cycle = (time * .16 + data.phase) % 1;
+            const go = cycle < .5 ? cycle * 2 : (1 - cycle) * 2;
+            const eased = go * go * (3 - 2 * go);
+            const pos = data.home.clone().lerp(data.meet, eased);
+            chibi.position.set(pos.x, .02 + Math.sin(time * 5 + data.phase) * .035, pos.z);
+            const direction = data.meet.clone().sub(data.home);
+            chibi.rotation.y = eased < .5 ? Math.atan2(direction.x, direction.z) : Math.atan2(-direction.x, -direction.z);
+            data.speech.visible = eased > .72;
+            for (const limb of data.limbs) {
+              const swing = Math.sin(time * 8 + data.phase) * .28;
+              if (limb.type === "arm") limb.mesh.rotation.z = limb.side * (.22 + swing);
+              if (limb.type === "leg") limb.mesh.rotation.z = limb.side * swing * .5;
+            }
+          }
+          renderer.render(scene, camera);
+          requestAnimationFrame(animate);
+        }
+        animate();
+      </script>
+    </body>
+    </html>
+    """.replace("__AGENTS_JSON__", scene_json)
+
+    st.components.v1.html(html, height=740, scrolling=False)
+
+
 def render_office_dashboard(
     default_provider: str,
     default_model: str,
@@ -1200,7 +1646,7 @@ def render_office_dashboard(
     metric_cols[3].metric("Providers", ready_provider_count)
 
     st.markdown("### ทีม Agent")
-    render_virtual_agent_office(
+    render_three_agent_office(
         default_provider,
         default_model,
         research_model_settings,
