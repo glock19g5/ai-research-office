@@ -664,6 +664,481 @@ def render_agent_character(agent: dict[str, str], model_label: str) -> None:
     )
 
 
+def render_virtual_agent_office(
+    default_provider: str,
+    default_model: str,
+    research_model_settings: dict[str, tuple[str, str]],
+    build_model_settings: dict[str, tuple[str, str]],
+    director_provider: str,
+    director_model: str,
+) -> None:
+    desk_layout = [
+        ("8%", "12%", "36vw", "140px", "ขอ brief"),
+        ("34%", "9%", "12vw", "155px", "มีข้อมูลใหม่"),
+        ("60%", "12%", "-8vw", "138px", "เทียบตัวเลือก"),
+        ("79%", "30%", "-24vw", "40px", "ฟันธงได้"),
+        ("8%", "55%", "36vw", "-70px", "แตก scope"),
+        ("31%", "66%", "12vw", "-125px", "วางระบบ"),
+        ("56%", "66%", "-8vw", "-126px", "เริ่ม build"),
+        ("78%", "55%", "-24vw", "-72px", "ตรวจให้"),
+    ]
+    hair_shapes = [
+        "round",
+        "side",
+        "cap",
+        "wave",
+        "bun",
+        "flat",
+        "visor",
+        "curl",
+    ]
+    desks_html: list[str] = []
+    agents_html: list[str] = []
+
+    for index, agent in enumerate(OFFICE_AGENTS):
+        x, y, mx, my, speech = desk_layout[index]
+        model_label = model_label_for_agent(
+            agent["key"],
+            default_provider,
+            default_model,
+            research_model_settings,
+            build_model_settings,
+            director_provider,
+            director_model,
+        )
+        name = escape(agent["name"])
+        role = escape(agent["role"])
+        team = escape(agent["team"])
+        icon = escape(agent["icon"])
+        color = escape(agent["color"])
+        accent = escape(agent["accent"])
+        model = escape(model_label)
+        delay = f"-{index * 0.75:.2f}s"
+        hair_shape = hair_shapes[index % len(hair_shapes)]
+        desk_style = f"--x:{x};--y:{y};--c:{color};--a:{accent};"
+        agent_style = f"--x:{x};--y:{y};--mx:{mx};--my:{my};--c:{color};--a:{accent};--delay:{delay};"
+
+        desks_html.append(
+            f"""
+            <div class="desk desk-{index}" style="{desk_style}">
+                <div class="chair"></div>
+                <div class="desk-top"><span>{icon}</span></div>
+                <div class="desk-label">{name}</div>
+            </div>
+            """
+        )
+        agents_html.append(
+            f"""
+            <div class="office-agent agent-{index}" style="{agent_style}" title="{name} | {team} | {model}">
+                <div class="talk">{escape(speech)}</div>
+                <div class="person">
+                    <div class="hair {hair_shape}"></div>
+                    <div class="head">
+                        <span class="eye left"></span>
+                        <span class="eye right"></span>
+                        <span class="mouth"></span>
+                    </div>
+                    <div class="neck"></div>
+                    <div class="arm left"></div>
+                    <div class="arm right"></div>
+                    <div class="torso"><span>{icon}</span></div>
+                    <div class="leg left"></div>
+                    <div class="leg right"></div>
+                </div>
+                <div class="name-tag">
+                    <b>{name}</b>
+                    <span>{role}</span>
+                </div>
+            </div>
+            """
+        )
+
+    st.components.v1.html(
+        f"""
+        <!doctype html>
+        <html>
+        <head>
+        <meta charset="utf-8" />
+        <style>
+            * {{
+                box-sizing: border-box;
+            }}
+            body {{
+                margin: 0;
+                font-family: "Inter", "Segoe UI", sans-serif;
+                color: #f8fafc;
+                background: transparent;
+            }}
+            .office-shell {{
+                min-height: 620px;
+                border: 1px solid rgba(255,255,255,.14);
+                border-radius: 8px;
+                overflow: hidden;
+                background:
+                    radial-gradient(circle at 15% 12%, rgba(103,232,249,.16), transparent 25%),
+                    radial-gradient(circle at 78% 18%, rgba(251,113,133,.12), transparent 23%),
+                    linear-gradient(180deg, #111827, #0b1120);
+                position: relative;
+            }}
+            .office-title {{
+                position: absolute;
+                left: 16px;
+                top: 14px;
+                z-index: 8;
+                font-weight: 850;
+                font-size: 20px;
+            }}
+            .office-subtitle {{
+                position: absolute;
+                left: 16px;
+                top: 42px;
+                z-index: 8;
+                color: rgba(248,250,252,.65);
+                font-size: 13px;
+            }}
+            .floor {{
+                position: absolute;
+                inset: 68px 16px 16px;
+                border-radius: 8px;
+                border: 1px solid rgba(255,255,255,.1);
+                background:
+                    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px),
+                    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+                    #172033;
+                background-size: 36px 36px;
+                overflow: hidden;
+            }}
+            .meeting-room {{
+                position: absolute;
+                left: 34%;
+                top: 28%;
+                width: 32%;
+                height: 26%;
+                min-width: 190px;
+                border: 1px solid rgba(255,255,255,.16);
+                border-radius: 8px;
+                background: rgba(15,23,42,.72);
+                box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+            }}
+            .meeting-room::before {{
+                content: "ห้องประชุม";
+                position: absolute;
+                top: 8px;
+                left: 12px;
+                color: rgba(248,250,252,.68);
+                font-size: 12px;
+                font-weight: 700;
+            }}
+            .meeting-table {{
+                position: absolute;
+                left: 20%;
+                top: 34%;
+                width: 60%;
+                height: 34%;
+                border-radius: 999px;
+                background: linear-gradient(180deg, #334155, #1f2937);
+                border: 3px solid rgba(148,163,184,.4);
+                box-shadow: 0 14px 20px rgba(0,0,0,.18);
+            }}
+            .meeting-chair {{
+                position: absolute;
+                width: 24px;
+                height: 18px;
+                border-radius: 6px;
+                background: rgba(148,163,184,.55);
+            }}
+            .chair-a {{ left: 23%; top: 22%; }}
+            .chair-b {{ right: 23%; top: 22%; }}
+            .chair-c {{ left: 23%; bottom: 18%; }}
+            .chair-d {{ right: 23%; bottom: 18%; }}
+            .path {{
+                position: absolute;
+                left: 16%;
+                top: 48%;
+                width: 68%;
+                height: 2px;
+                border-top: 2px dashed rgba(148,163,184,.22);
+            }}
+            .desk {{
+                position: absolute;
+                left: var(--x);
+                top: var(--y);
+                width: 118px;
+                height: 88px;
+                z-index: 2;
+            }}
+            .desk-top {{
+                position: absolute;
+                left: 18px;
+                top: 18px;
+                width: 78px;
+                height: 42px;
+                border-radius: 8px;
+                display: grid;
+                place-items: center;
+                background: linear-gradient(180deg, var(--a), var(--c));
+                border: 3px solid rgba(15,23,42,.74);
+                box-shadow: 0 10px 16px rgba(0,0,0,.18);
+                font-size: 19px;
+            }}
+            .chair {{
+                position: absolute;
+                left: 42px;
+                top: 56px;
+                width: 32px;
+                height: 24px;
+                border-radius: 7px 7px 12px 12px;
+                background: var(--a);
+                border: 3px solid rgba(15,23,42,.72);
+            }}
+            .desk-label {{
+                position: absolute;
+                left: 0;
+                top: 2px;
+                max-width: 118px;
+                padding: 2px 7px;
+                border-radius: 999px;
+                background: rgba(15,23,42,.75);
+                color: rgba(248,250,252,.86);
+                font-size: 11px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }}
+            .office-agent {{
+                position: absolute;
+                left: var(--x);
+                top: var(--y);
+                width: 86px;
+                height: 128px;
+                z-index: 6;
+                animation: consult 9.5s ease-in-out infinite;
+                animation-delay: var(--delay);
+            }}
+            .person {{
+                position: absolute;
+                left: 16px;
+                top: 27px;
+                width: 54px;
+                height: 86px;
+                filter: drop-shadow(0 8px 8px rgba(0,0,0,.25));
+                animation: human-bob .62s ease-in-out infinite alternate;
+            }}
+            .head {{
+                position: absolute;
+                left: 8px;
+                top: 4px;
+                width: 38px;
+                height: 36px;
+                border-radius: 13px 13px 11px 11px;
+                background: #f3c79f;
+                border: 3px solid rgba(15,23,42,.78);
+            }}
+            .hair {{
+                position: absolute;
+                z-index: 2;
+                background: var(--a);
+                border: 2px solid rgba(15,23,42,.78);
+            }}
+            .hair.round {{
+                left: 5px; top: 0; width: 44px; height: 16px; border-radius: 12px 12px 5px 5px;
+            }}
+            .hair.side {{
+                left: 4px; top: 1px; width: 42px; height: 20px; border-radius: 12px 4px 12px 4px;
+            }}
+            .hair.cap {{
+                left: 2px; top: -1px; width: 48px; height: 17px; border-radius: 14px 14px 4px 4px;
+            }}
+            .hair.wave {{
+                left: 4px; top: -1px; width: 44px; height: 18px; border-radius: 50% 45% 20% 30%;
+            }}
+            .hair.bun {{
+                left: 7px; top: 0; width: 38px; height: 15px; border-radius: 10px;
+            }}
+            .hair.bun::after {{
+                content: ""; position: absolute; right: -7px; top: 1px; width: 12px; height: 12px; border-radius: 50%; background: var(--a); border: 2px solid rgba(15,23,42,.78);
+            }}
+            .hair.flat {{
+                left: 4px; top: 3px; width: 44px; height: 12px; border-radius: 4px 4px 9px 9px;
+            }}
+            .hair.visor {{
+                left: 3px; top: 1px; width: 47px; height: 15px; border-radius: 13px 13px 3px 3px;
+            }}
+            .hair.visor::after {{
+                content: ""; position: absolute; right: -11px; top: 6px; width: 16px; height: 5px; border-radius: 8px; background: var(--a); border: 2px solid rgba(15,23,42,.78);
+            }}
+            .hair.curl {{
+                left: 5px; top: -1px; width: 43px; height: 19px; border-radius: 11px 11px 8px 8px;
+            }}
+            .eye {{
+                position: absolute;
+                top: 16px;
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                background: #0f172a;
+            }}
+            .eye.left {{ left: 10px; }}
+            .eye.right {{ right: 10px; }}
+            .mouth {{
+                position: absolute;
+                left: 14px;
+                top: 25px;
+                width: 11px;
+                height: 5px;
+                border-bottom: 2px solid #0f172a;
+                border-radius: 0 0 10px 10px;
+            }}
+            .neck {{
+                position: absolute;
+                left: 22px;
+                top: 38px;
+                width: 10px;
+                height: 8px;
+                background: #f3c79f;
+                border-left: 2px solid rgba(15,23,42,.55);
+                border-right: 2px solid rgba(15,23,42,.55);
+            }}
+            .torso {{
+                position: absolute;
+                left: 7px;
+                top: 44px;
+                width: 40px;
+                height: 34px;
+                border-radius: 10px 10px 7px 7px;
+                background: var(--c);
+                border: 3px solid rgba(15,23,42,.78);
+                display: grid;
+                place-items: center;
+                font-size: 15px;
+            }}
+            .arm, .leg {{
+                position: absolute;
+                background: var(--a);
+                border: 3px solid rgba(15,23,42,.78);
+                border-radius: 10px;
+                transform-origin: center top;
+            }}
+            .arm {{
+                top: 47px;
+                width: 12px;
+                height: 30px;
+                animation: human-arm .62s ease-in-out infinite alternate;
+            }}
+            .arm.left {{ left: 0; }}
+            .arm.right {{ right: 0; animation-direction: alternate-reverse; }}
+            .leg {{
+                top: 74px;
+                width: 14px;
+                height: 24px;
+                animation: human-leg .62s ease-in-out infinite alternate;
+            }}
+            .leg.left {{ left: 12px; }}
+            .leg.right {{ right: 12px; animation-direction: alternate-reverse; }}
+            .name-tag {{
+                position: absolute;
+                left: -4px;
+                top: 104px;
+                width: 96px;
+                border-radius: 8px;
+                padding: 3px 5px;
+                background: rgba(15,23,42,.82);
+                border: 1px solid rgba(255,255,255,.1);
+                text-align: center;
+            }}
+            .name-tag b {{
+                display: block;
+                font-size: 11px;
+                line-height: 1.15;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }}
+            .name-tag span {{
+                display: block;
+                color: rgba(248,250,252,.58);
+                font-size: 9px;
+                line-height: 1.2;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }}
+            .talk {{
+                position: absolute;
+                left: 10px;
+                top: -4px;
+                min-width: 60px;
+                max-width: 104px;
+                padding: 4px 7px;
+                border-radius: 9px 9px 9px 2px;
+                background: rgba(248,250,252,.92);
+                color: #0f172a;
+                font-size: 10px;
+                font-weight: 750;
+                opacity: 0;
+                transform: translateY(6px);
+                animation: speak 9.5s ease-in-out infinite;
+                animation-delay: var(--delay);
+            }}
+            @keyframes consult {{
+                0%, 24% {{ transform: translate(0,0) scaleX(1); }}
+                38%, 64% {{ transform: translate(var(--mx), var(--my)) scaleX(1); }}
+                72% {{ transform: translate(var(--mx), var(--my)) scaleX(-1); }}
+                100% {{ transform: translate(0,0) scaleX(-1); }}
+            }}
+            @keyframes speak {{
+                0%, 34%, 70%, 100% {{ opacity: 0; transform: translateY(6px); }}
+                42%, 60% {{ opacity: 1; transform: translateY(0); }}
+            }}
+            @keyframes human-bob {{
+                from {{ transform: translateY(0); }}
+                to {{ transform: translateY(-4px); }}
+            }}
+            @keyframes human-arm {{
+                from {{ transform: rotate(18deg); }}
+                to {{ transform: rotate(-18deg); }}
+            }}
+            @keyframes human-leg {{
+                from {{ transform: rotate(-11deg); }}
+                to {{ transform: rotate(12deg); }}
+            }}
+            @media (max-width: 620px) {{
+                .office-shell {{ min-height: 720px; }}
+                .floor {{ inset: 64px 8px 10px; }}
+                .office-title {{ font-size: 17px; left: 12px; }}
+                .office-subtitle {{ font-size: 11px; left: 12px; }}
+                .meeting-room {{ left: 22%; top: 34%; width: 56%; height: 22%; min-width: 0; }}
+                .desk {{ transform: scale(.82); transform-origin: left top; }}
+                .office-agent {{ transform-origin: left top; }}
+                .name-tag span {{ display: none; }}
+            }}
+        </style>
+        </head>
+        <body>
+            <div class="office-shell">
+                <div class="office-title">AI Agent Virtual Office</div>
+                <div class="office-subtitle">ทุกคนมีโต๊ะทำงาน และเดินเข้าห้องประชุมเพื่อปรึกษากัน</div>
+                <div class="floor">
+                    <div class="path"></div>
+                    <div class="meeting-room">
+                        <div class="meeting-table"></div>
+                        <div class="meeting-chair chair-a"></div>
+                        <div class="meeting-chair chair-b"></div>
+                        <div class="meeting-chair chair-c"></div>
+                        <div class="meeting-chair chair-d"></div>
+                    </div>
+                    {''.join(desks_html)}
+                    {''.join(agents_html)}
+                </div>
+            </div>
+        </body>
+        </html>
+        """,
+        height=650,
+        scrolling=False,
+    )
+
+
 def render_office_dashboard(
     default_provider: str,
     default_model: str,
@@ -684,14 +1159,17 @@ def render_office_dashboard(
     metric_cols[3].metric("Providers", ready_provider_count)
 
     st.markdown("### ทีม Agent")
-    for start in range(0, len(OFFICE_AGENTS), 2):
-        columns = st.columns(2)
-        for offset, column in enumerate(columns):
-            agent_index = start + offset
-            if agent_index >= len(OFFICE_AGENTS):
-                continue
+    render_virtual_agent_office(
+        default_provider,
+        default_model,
+        research_model_settings,
+        build_model_settings,
+        director_provider,
+        director_model,
+    )
 
-            agent = OFFICE_AGENTS[agent_index]
+    with st.expander("รายชื่อ Agent และโมเดลที่ใช้", expanded=False):
+        for agent in OFFICE_AGENTS:
             model_label = model_label_for_agent(
                 agent["key"],
                 default_provider,
@@ -701,9 +1179,7 @@ def render_office_dashboard(
                 director_provider,
                 director_model,
             )
-
-            with column:
-                render_agent_character(agent, model_label)
+            st.markdown(f"- {agent['icon']} **{agent['name']}** ({agent['team']}) — `{model_label}`")
 
 
 def session_api_key(provider: str) -> str | None:
