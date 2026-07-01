@@ -135,7 +135,7 @@ def apply_page_styles() -> None:
     st.markdown(
         """
         <style>
-        #MainMenu, footer, [data-testid="stToolbar"], [data-testid="stDecoration"] {
+        #MainMenu, footer, [data-testid="stToolbar"], [data-testid="stDecoration"], header[data-testid="stHeader"] {
             display: none;
         }
         .block-container {
@@ -184,6 +184,19 @@ def apply_page_styles() -> None:
             font-size: 1.1rem;
             color: rgba(250, 250, 250, .72);
             margin-bottom: 1.3rem;
+        }
+        .login-hero {
+            padding: 1.15rem 0 .8rem;
+        }
+        .login-hero .hero-title {
+            font-size: clamp(2rem, 7vw, 3rem);
+            margin-bottom: .45rem;
+        }
+        .login-hero .hero-subtitle {
+            max-width: 680px;
+            font-size: 1rem;
+            line-height: 1.45;
+            margin-bottom: .4rem;
         }
         .feature-grid {
             display: grid;
@@ -240,7 +253,33 @@ def apply_page_styles() -> None:
                 min-height: 3rem;
             }
             .feature-grid { grid-template-columns: 1fr; }
-            .hero-title { font-size: 2.25rem; }
+            .hero-wrap {
+                padding: .7rem 0 .55rem;
+            }
+            .hero-title {
+                font-size: clamp(1.7rem, 9vw, 2.35rem);
+                line-height: 1.05;
+                margin-bottom: .45rem;
+            }
+            .hero-subtitle {
+                font-size: .96rem;
+                line-height: 1.38;
+                margin-bottom: .75rem;
+            }
+            .login-hero {
+                padding: .35rem 0 .45rem;
+            }
+            .login-hero .hero-title {
+                font-size: clamp(1.8rem, 10vw, 2.35rem);
+                line-height: 1.03;
+            }
+            .login-hero .hero-subtitle {
+                font-size: .95rem;
+                line-height: 1.35;
+            }
+            .login-steps {
+                display: none;
+            }
         }
         </style>
         """,
@@ -249,15 +288,31 @@ def apply_page_styles() -> None:
 
 
 def render_landing(show_login: bool = False) -> None:
+    hero_class = "hero-wrap login-hero" if show_login else "hero-wrap"
+    subtitle = (
+        "เข้าสู่ระบบหรือสมัครสมาชิก แล้วใส่ API key ของคุณเพื่อเริ่มใช้งาน"
+        if show_login
+        else (
+            "พื้นที่ทำงาน AI สำหรับวิจัย วางแผน สร้างโปรเจกต์ และแปลงผลลัพธ์เป็นไฟล์จริง "
+            "โดยผู้ใช้แต่ละคนสามารถใช้ API key ของตัวเองได้"
+        )
+    )
+    st.markdown(
+        f"""
+        <div class="{hero_class}">
+            <div class="hero-title">🧠 AI Research Office</div>
+            <div class="hero-subtitle">{subtitle}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if show_login:
+        st.markdown("### เข้าสู่ระบบ")
+        return
+
     st.markdown(
         """
-        <div class="hero-wrap">
-            <div class="hero-title">🧠 AI Research Office</div>
-            <div class="hero-subtitle">
-                พื้นที่ทำงาน AI สำหรับวิจัย วางแผน สร้างโปรเจกต์ และแปลงผลลัพธ์เป็นไฟล์จริง
-                โดยผู้ใช้แต่ละคนสามารถใช้ API key ของตัวเองได้
-            </div>
-        </div>
         <div class="feature-grid">
             <div class="feature-card"><strong>🔍 Research</strong><span>ช่วยสรุป วิเคราะห์ เปรียบเทียบ และให้คำแนะนำเป็นภาษาไทย</span></div>
             <div class="feature-card"><strong>🏗️ Build</strong><span>ช่วยวาง PRD, architecture, code package และสร้างไฟล์โปรเจกต์จริง</span></div>
@@ -270,16 +325,15 @@ def render_landing(show_login: bool = False) -> None:
     st.markdown("### วิธีเริ่มใช้งาน")
     st.markdown(
         """
+        <div class="login-steps">
         <div class="step-box"><b>1.</b> สมัครสมาชิกหรือเข้าสู่ระบบด้วยบัญชีของคุณ</div>
         <div class="step-box"><b>2.</b> เปิด sidebar แล้วกรอก API key ของคุณใน <code>API keys ของผู้ใช้นี้</code></div>
         <div class="step-box"><b>3.</b> เลือกโหมด <code>วิจัยและแนะนำ</code> หรือ <code>สร้างโปรเจกต์ใหม่</code></div>
         <div class="step-box"><b>4.</b> เปิดโหมดประหยัด quota สำหรับการทดลอง หรือเลือกโมเดลแยกต่อ agent เมื่อพร้อม</div>
+        </div>
         """,
         unsafe_allow_html=True,
     )
-
-    if show_login:
-        st.markdown("### เข้าสู่ระบบ")
 
 
 def render_app_header() -> None:
