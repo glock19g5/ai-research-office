@@ -1,5 +1,6 @@
 """Streamlit UI for AI Research Office."""
 
+import io
 import importlib
 from html import escape
 
@@ -129,6 +130,8 @@ OFFICE_AGENTS = [
 ]
 
 SESSION_KEY_PREFIX = "session_api_key_"
+MAX_CONTEXT_CHARS = 14000
+MAX_FILE_CHARS = 7000
 
 
 def apply_page_styles() -> None:
@@ -743,6 +746,144 @@ def missing_provider_keys(providers: set[str]) -> list[tuple[str, str]]:
     ]
 
 
+def truncate_text(text: str, limit: int = MAX_FILE_CHARS) -> str:
+    clean_text = text.strip()
+    if len(clean_text) <= limit:
+        return clean_text
+    return clean_text[:limit].rstrip() + "\n\n...[ตัดข้อความบางส่วนเพื่อไม่ให้ prompt ยาวเกินไป]"
+
+
+def extract_uploaded_text(uploaded_file) -> tuple[str, str]:
+    name = uploaded_file.name
+    suffix = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    data = uploaded_file.getvalue()
+
+    if suffix in {"txt", "md", "csv", "json", "py", "html", "css", "js", "xml", "yaml", "yml"}:
+        text = data.decode("utf-8", errors="replace")
+        return name, truncate_text(text)
+
+    if suffix == "pdf":
+        try:
+            from pypdf import PdfReader
+
+            reader = PdfReader(io.BytesIO(data))
+            pages = [page.extract_text() or "" for page in reader.pages[:12]]
+            text = "\n\n".join(page.strip() for page in pages if page.strip())
+            return name, truncate_text(text or "อ่าน PDF แล้ว แต่ไม่พบข้อความที่ extract ได้")
+        except Exception as exc:
+            return name, f"อ่าน PDF ไม่สำเร็จ: {type(exc).__name__}: {exc}"
+
+    if suffix == "docx":
+        try:
+            from docx import Document
+
+            document = Document(io.BytesIO(data))
+            text = "\n".join(paragraph.text for paragraph in document.paragraphs if paragraph.text.strip())
+            return name, truncate_text(text or "อ่าน DOCX แล้ว แต่ไม่พบข้อความ")
+        except Exception as exc:
+            return name, f"อ่าน DOCX ไม่สำเร็จ: {type(exc).__name__}: {exc}"
+
+    return name, f"แนบไฟล์แล้ว แต่ยังอ่านเนื้อหาไฟล์ชนิด .{suffix or 'unknown'} ไม่ได้โดยตรง"
+
+
+def transcribe_audio(audio_file) -> str:
+    api_key = effective_api_key("OpenAI / ChatGPT")
+    if not api_key:
+        return "แนบเสียงแล้ว แต่ยังไม่ได้ถอดเสียง เพราะยังไม่มี OpenAI API key"
+
+    try:
+        from openai import OpenAI
+
+        client = OpenAI(api_key=api_key)
+        audio_bytes = audio_file.getvalue()
+        file_name = getattr(audio_file, "name", "voice_input.wav") or "voice_input.wav"
+        transcript = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=(file_name, audio_bytes),
+        )
+        text = getattr(transcript, "text", str(transcript))
+        return truncate_text(text, limit=4000)
+    except Exception as exc:
+        return f"ถอดเสียงไม่สำเร็จ: {type(exc).__name__}: {exc}"
+
+
+def render_attachment_tools() -> str:
+    context_blocks: list[str] = []
+
+    with st.expander("📎 แนบไฟล์ / รูปภาพ / เสียงพูด", expanded=False):
+        st.caption("ไฟล์ข้อความ, PDF, DOCX จะถูกอ่านเข้า prompt ส่วนรูปภาพจะแสดง preview และแนบข้อมูลไฟล์")
+
+        uploaded_files = st.file_uploader(
+            "แนบไฟล์ประกอบคำสั่ง",
+            type=["txt", "md", "csv", "json", "py", "html", "css", "js", "pdf", "docx"],
+            accept_multiple_files=True,
+            key="context_files",
+        )
+        if uploaded_files:
+            st.markdown("**ไฟล์ที่แนบ**")
+            for uploaded_file in uploaded_files:
+                file_name, file_text = extract_uploaded_text(uploaded_file)
+                st.write(f"- {file_name}")
+                context_blocks.append(f"## ไฟล์แนบ: {file_name}\n{file_text}")
+
+        uploaded_images = st.file_uploader(
+            "แนบรูปภาพ",
+            type=["png", "jpg", "jpeg", "webp"],
+            accept_multiple_files=True,
+            key="context_images",
+        )
+        if uploaded_images:
+            image_cols = st.columns(2)
+            for index, image in enumerate(uploaded_images):
+                with image_cols[index % 2]:
+                    st.image(image, caption=image.name, use_container_width=True)
+                context_blocks.append(
+                    f"## รูปภาพแนบ: {image.name}\n"
+                    f"- ชนิดไฟล์: {image.type or 'unknown'}\n"
+                    f"- ขนาดไฟล์: {len(image.getvalue())} bytes\n"
+                    "- หมายเหตุ: หากต้องการให้ AI วิเคราะห์รายละเอียดในภาพ ให้พิมพ์คำอธิบายภาพเพิ่มในคำสั่งหลัก"
+                )
+
+        audio_file = None
+        if hasattr(st, "audio_input"):
+            audio_file = st.audio_input("พูดแทนการพิมพ์", key="voice_input")
+        else:
+            audio_file = st.file_uploader(
+                "อัปโหลดไฟล์เสียงแทนการพูด",
+                type=["wav", "mp3", "m4a", "webm", "ogg"],
+                key="voice_file",
+            )
+
+        if audio_file is not None:
+            st.audio(audio_file)
+            if st.button("ถอดเสียงเป็นคำสั่ง", use_container_width=True):
+                st.session_state["voice_transcript"] = transcribe_audio(audio_file)
+                st.rerun()
+
+        voice_text = st.session_state.get("voice_transcript", "").strip()
+        if voice_text:
+            st.text_area("ข้อความจากเสียง", value=voice_text, height=120, key="voice_transcript_preview")
+            context_blocks.append(f"## ข้อความจากเสียงพูด\n{voice_text}")
+
+        if context_blocks:
+            st.success(f"แนบข้อมูลแล้ว {len(context_blocks)} รายการ")
+
+    combined_context = "\n\n".join(context_blocks)
+    return truncate_text(combined_context, limit=MAX_CONTEXT_CHARS)
+
+
+def combine_user_input(user_input: str, attachment_context: str) -> str:
+    base_input = user_input.strip()
+    if not attachment_context:
+        return base_input
+
+    return (
+        f"{base_input}\n\n"
+        "ข้อมูลประกอบจากไฟล์/รูปภาพ/เสียงที่ผู้ใช้แนบ:\n"
+        f"{attachment_context}"
+    )
+
+
 def require_login() -> None:
     if st.session_state.get("authenticated_user"):
         return
@@ -1014,11 +1155,16 @@ if "user_input" in st.session_state:
     st.info(f"📌 คำสั่งที่เลือก: **{user_input}**")
 
 
+attachment_context = render_attachment_tools()
+prompt_for_agents = combine_user_input(user_input, attachment_context)
+display_command = user_input.strip() or "คำสั่งจากไฟล์/รูปภาพ/เสียงที่แนบ"
+
+
 run_button_label = "🚀 เริ่มการวิจัย" if mode_key == "research" else "🏗️ เริ่มวางแผนสร้างโปรเจกต์"
 
 if st.button(run_button_label, type="primary", use_container_width=True):
-    if not user_input.strip():
-        st.warning("⚠️ กรุณากรอกคำสั่งก่อนครับ")
+    if not prompt_for_agents.strip():
+        st.warning("⚠️ กรุณากรอกคำสั่ง หรือแนบไฟล์/เสียงก่อนครับ")
     else:
         try:
             active_settings = research_model_settings if mode_key == "research" else build_model_settings
@@ -1031,7 +1177,7 @@ if st.button(run_button_label, type="primary", use_container_width=True):
                 raise ValueError(f"ยังขาด API key สำหรับ provider ที่เลือก:\n{missing_text}")
 
             with st.status("🤖 ทีมเอเจนต์กำลังทำงาน...", expanded=True) as status:
-                st.write(f"📌 คำสั่ง: **{user_input}**")
+                st.write(f"📌 คำสั่ง: **{display_command}**")
                 st.write(f"🧭 โหมด: **{mode_label}**")
                 st.write(f"🧠 โมเดลหลัก: `{default_provider} / {default_model}`")
                 st.write(f"💸 ประหยัด quota: `{'เปิด' if economy_mode else 'ปิด'}`")
@@ -1041,7 +1187,7 @@ if st.button(run_button_label, type="primary", use_container_width=True):
 
                 if economy_mode:
                     st.write("⏳ AI Office Lead กำลังทำงานแบบประหยัด quota...")
-                    result = run_quick_workflow(user_input, mode_label, director_llm)
+                    result = run_quick_workflow(prompt_for_agents, mode_label, director_llm)
                     director_brief = "โหมดประหยัด quota: ข้าม Director brief แยกขั้น เพื่อลดจำนวน API requests"
                     result_title = "⚡ ผลลัพธ์แบบประหยัด quota"
                     download_prefix = "quick"
@@ -1049,7 +1195,7 @@ if st.button(run_button_label, type="primary", use_container_width=True):
 
                 elif mode_key == "research":
                     st.write("⏳ Director กำลังอ่านคำสั่งและจัด brief...")
-                    director_result = create_director_brief(user_input, mode_label, director_llm)
+                    director_result = create_director_brief(prompt_for_agents, mode_label, director_llm)
                     director_brief = getattr(director_result, "raw", str(director_result))
                     st.write("✅ Director brief พร้อมแล้ว")
                     st.write("⏳ Info Hunter กำลังค้นข้อมูล...")
@@ -1058,7 +1204,7 @@ if st.button(run_button_label, type="primary", use_container_width=True):
                     st.write("⏳ Advisor กำลังให้คำแนะนำ...")
                     st.write("⏳ Fact Checker กำลังตรวจสอบและเรียบเรียง...")
                     st.caption("💡 ใช้เวลาประมาณ 30-90 วินาที ขึ้นกับโมเดลและความยาว")
-                    result = run_research_crew(user_input, team_llms, director_brief=director_brief)
+                    result = run_research_crew(prompt_for_agents, team_llms, director_brief=director_brief)
                     result_title = "📊 รายงานผลการวิจัย"
                     download_prefix = "research"
                     agent_labels = [
@@ -1070,7 +1216,7 @@ if st.button(run_button_label, type="primary", use_container_width=True):
                     ]
                 else:
                     st.write("⏳ Director กำลังอ่านคำสั่งและจัด brief...")
-                    director_result = create_director_brief(user_input, mode_label, director_llm)
+                    director_result = create_director_brief(prompt_for_agents, mode_label, director_llm)
                     director_brief = getattr(director_result, "raw", str(director_result))
                     st.write("✅ Director brief พร้อมแล้ว")
                     st.write("⏳ Product Planner กำลังแตก requirement...")
@@ -1079,7 +1225,7 @@ if st.button(run_button_label, type="primary", use_container_width=True):
                     st.write("⏳ Tester กำลังตรวจความพร้อมส่งมอบ...")
                     st.write("⏳ Delivery Reporter กำลังเรียบเรียงรายงานสุดท้าย...")
                     st.caption("💡 เวอร์ชันนี้ยังเป็น build package ใน Markdown ก่อน ขั้นถัดไปจะให้สร้างไฟล์จริง")
-                    result = run_build_crew(user_input, director_brief, team_llms)
+                    result = run_build_crew(prompt_for_agents, director_brief, team_llms)
                     result_title = "🏗️ แพ็กเกจสร้างโปรเจกต์"
                     download_prefix = "build"
                     agent_labels = [
@@ -1102,7 +1248,7 @@ if st.button(run_button_label, type="primary", use_container_width=True):
             st.markdown(final_output)
 
             if mode_key == "build" and write_files_mode:
-                project_dir, generated_files = project_writer.write_project_files(user_input, final_output)
+                project_dir, generated_files = project_writer.write_project_files(display_command, final_output)
                 st.success(f"สร้างไฟล์โปรเจกต์แล้ว: `{project_dir}`")
                 if generated_files:
                     st.markdown("### 📁 ไฟล์ที่สร้าง")
@@ -1125,7 +1271,7 @@ if st.button(run_button_label, type="primary", use_container_width=True):
             st.download_button(
                 "💾 ดาวน์โหลดผลลัพธ์ (.md)",
                 data=str(final_output),
-                file_name=f"{download_prefix}_{user_input[:30].replace(' ', '_')}.md",
+                file_name=f"{download_prefix}_{display_command[:30].replace(' ', '_')}.md",
                 mime="text/markdown",
             )
 
