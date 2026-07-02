@@ -93,6 +93,17 @@ API keys ของผู้ใช้นี้
 
 key ที่กรอกในช่องนี้อยู่ใน session ของผู้ใช้ ไม่ถูกเขียนลง `.env`
 
+## ส่งสรุปงานเข้า LINE
+
+แอปรองรับการส่งสรุปหลัง Agent ทำงานเสร็จผ่าน LINE Messaging API โดยใช้ LINE Official Account:
+
+```text
+LINE Channel Access Token
+Recipient ID: userId, groupId หรือ roomId
+```
+
+ตั้งค่าได้ใน sidebar ตรง `ส่งสรุปเข้า LINE` แล้วกดส่งข้อความทดสอบก่อนใช้งานจริงได้ LINE Notify เดิมยุติบริการแล้ว จึงควรใช้ Messaging API แทน
+
 หมายเหตุ:
 
 - ถ้ารันบนเครื่องคุณด้วย `localhost:8501` คนอื่นจะเข้าไม่ได้จากอินเทอร์เน็ต

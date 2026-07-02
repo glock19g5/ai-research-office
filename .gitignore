@@ -1,4 +1,5 @@
 .env
+data/
 data/users.json
 __pycache__/
 *.pyc

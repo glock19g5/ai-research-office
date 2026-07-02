@@ -76,7 +76,8 @@ def run_research_crew(topic: str, llm: LLM | dict[str, LLM], director_brief: str
             "## 📊 ตารางเปรียบเทียบ\n"
             "## 🎯 คำแนะนำ\n"
             "## ⚠️ ข้อควรระวัง\n"
-            "## 🚀 ขั้นตอนต่อไป"
+            "## 🚀 ขั้นตอนต่อไป\n"
+            "## 🧩 คำแนะนำเพิ่มสกิล/วิธีทำงานต่อ"
         ),
         agent=checker,
         context=[task1, task2, task3, task4],

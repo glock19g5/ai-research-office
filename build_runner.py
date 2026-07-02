@@ -68,7 +68,8 @@ def run_build_crew(user_request: str, director_brief: str, llm: LLM | dict[str, 
             "ให้ชัดว่าต้องสร้างไฟล์อะไร วางโค้ดตรงไหน รันอย่างไร และพัฒนาต่ออะไร"
         ),
         expected_output=(
-            "Build Report ภาษาไทยใน Markdown มี Executive Summary, File Tree, Key Code, Run Steps, Test Steps, Next Iteration"
+            "Build Report ภาษาไทยใน Markdown มี Executive Summary, File Tree, Key Code, Run Steps, Test Steps, "
+            "Next Iteration และหัวข้อ ## 🧩 คำแนะนำเพิ่มสกิล/วิธีทำงานต่อ"
         ),
         agent=reporter,
         context=[task1, task2, task3, task4],

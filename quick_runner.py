@@ -30,7 +30,8 @@ def run_quick_workflow(user_request: str, mode_label: str, llm: LLM):
             "```"
         ),
         expected_output=(
-            "รายงาน Markdown ภาษาไทยที่ครบพอสำหรับการตัดสินใจหรือเริ่มสร้างงานต่อ โดยใช้ token อย่างคุ้มค่า"
+            "รายงาน Markdown ภาษาไทยที่ครบพอสำหรับการตัดสินใจหรือเริ่มสร้างงานต่อ โดยใช้ token อย่างคุ้มค่า "
+            "และมีหัวข้อ ## 🧩 คำแนะนำเพิ่มสกิล/วิธีทำงานต่อ"
         ),
         agent=quick_agent,
     )

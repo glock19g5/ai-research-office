@@ -2,8 +2,11 @@
 
 import os
 from pathlib import Path
+from typing import Any
 
 from crewai import LLM
+from crewai.llms.providers.gemini.completion import GeminiCompletion
+from google.genai import types as genai_types
 
 
 def load_dotenv() -> None:
@@ -62,6 +65,30 @@ DEFAULT_MODEL = "gemini-2.5-flash"
 AVAILABLE_MODELS = MODEL_CATALOG["Google Gemini"]
 
 
+class GeminiWithGoogleSearch(GeminiCompletion):
+    """CrewAI Gemini provider that enables Google Search grounding."""
+
+    def _prepare_generation_config(
+        self,
+        system_instruction: str | None = None,
+        tools: list[dict[str, Any]] | None = None,
+        response_model: type[Any] | None = None,
+    ) -> genai_types.GenerateContentConfig:
+        config = super()._prepare_generation_config(
+            system_instruction=system_instruction,
+            tools=tools,
+            response_model=response_model,
+        )
+        existing_tools = list(config.tools or [])
+        has_google_search = any(
+            getattr(tool, "google_search", None) is not None for tool in existing_tools
+        )
+        if not has_google_search:
+            existing_tools.insert(0, genai_types.Tool(google_search=genai_types.GoogleSearch()))
+            config.tools = existing_tools
+        return config
+
+
 def get_gemini_key() -> str | None:
     """Backward-compatible helper for older app.py versions."""
     return os.environ.get("GEMINI_API_KEY")
@@ -81,7 +108,12 @@ def get_model_options(provider: str) -> list[str]:
     return MODEL_CATALOG[provider]
 
 
-def get_llm(provider: str, model_name: str | None = None, api_key: str | None = None) -> LLM:
+def get_llm(
+    provider: str,
+    model_name: str | None = None,
+    api_key: str | None = None,
+    google_grounding: bool = False,
+) -> LLM:
     """Create the CrewAI LLM wrapper for the selected provider/model."""
     if provider not in PROVIDER_PREFIXES:
         legacy_model = provider
@@ -98,8 +130,11 @@ def get_llm(provider: str, model_name: str | None = None, api_key: str | None = 
         raise ValueError(f"ไม่พบ {env_name} สำหรับ provider {provider}")
 
     prefix = PROVIDER_PREFIXES[provider]
-    return LLM(
+    llm = LLM(
         model=f"{prefix}{model_name}",
         api_key=key,
         temperature=0.7,
     )
+    if provider == "Google Gemini" and google_grounding:
+        return GeminiWithGoogleSearch(**llm.model_dump())
+    return llm
