@@ -2862,6 +2862,12 @@ def friendly_transcription_error(exc: Exception) -> str:
             "ให้เปิด sidebar > `API keys ของผู้ใช้นี้` แล้วแก้ช่อง `OpenAI / ChatGPT` "
             "หรือกดล้าง API keys ที่บันทึกไว้แล้วใส่ key ใหม่"
         )
+    if error_type == "PermissionDeniedError" or "403" in lower_text or "permission" in lower_text:
+        return (
+            "ถอดเสียงไม่สำเร็จ: OpenAI key นี้ไม่มีสิทธิ์ใช้การถอดเสียง (403) "
+            "มักเกิดจากสร้าง key แบบ Restricted ให้เข้า platform.openai.com > API keys "
+            "แล้วสร้าง key ใหม่แบบ Permissions: All หรือเปิดสิทธิ์ Model capabilities เป็น Write"
+        )
     if "insufficient_quota" in lower_text or "quota" in lower_text or "billing" in lower_text:
         return (
             "ถอดเสียงไม่สำเร็จ: OpenAI key นี้ไม่มี quota หรือยังไม่ได้เปิด billing "
